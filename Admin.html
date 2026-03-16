@@ -146,20 +146,13 @@ select{padding-right:34px;cursor:pointer}
         <div class="fila">
           <label>Productor</label>
           <div class="sel-w">
-            <select id="f-prod" onchange="cargarLotesProductor()">
+            <select id="f-prod" onchange="mostrarPrevio(this.value)">
               <option value="">— Seleccionar productor —</option>
             </select>
           </div>
         </div>
 
-        <div class="fila" id="f-lote-wrap" style="display:none">
-          <label>Lote / Pabellón</label>
-          <div class="sel-w">
-            <select id="f-lote">
-              <option value="">— Seleccionar lote —</option>
-            </select>
-          </div>
-        </div>
+
 
         <div id="previo-wrap" class="resumen-prev"></div>
 
@@ -278,46 +271,18 @@ function poblarProductores(){
   });
 }
 
-async function cargarLotesProductor(){
-  const slug=document.getElementById('f-prod').value;
-  const loteWrap=document.getElementById('f-lote-wrap');
-  const loteSel=document.getElementById('f-lote');
-  if(!slug){loteWrap.style.display='none';return;}
-  loteSel.innerHTML='<option value="">Cargando...</option>';
-  loteWrap.style.display='';
-  mostrarPrevio(slug);
-  try{
-    if(lotesCache[slug]){
-      poblarLotesSel(lotesCache[slug]);return;
-    }
-    const r=await fetch(`${SCRIPT_URL}?accion=lotes&slug=${encodeURIComponent(slug)}`);
-    const j=await r.json();
-    const lts=j.ok?j.lotes:[];
-    lotesCache[slug]=lts;
-    poblarLotesSel(lts);
-  }catch{
-    loteSel.innerHTML='<option value="">Error cargando lotes</option>';
-  }
-}
 
-function poblarLotesSel(lotes){
-  const sel=document.getElementById('f-lote');
-  if(!lotes.length){
-    sel.innerHTML='<option value="">Sin lotes configurados</option>';
-    return;
-  }
-  sel.innerHTML=lotes.map(l=>`<option value="${escAttr(l.nombre)}">${l.nombre} (${l.aves.toLocaleString('es-CL')} aves)</option>`).join('');
-}
 
 function escAttr(s){return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
 
 function mostrarPrevio(slug){
+  if(!slug){document.getElementById('previo-wrap').classList.remove('show');return;}
   const prev=document.getElementById('previo-wrap');
-  const ultimas=entregasLocal.filter(e=>e.slug===slug).slice(-3);
+  const ultimas=entregasLocal.filter(e=>e.slug===slug).sort((a,b)=>b.fecha.localeCompare(a.fecha));
   if(!ultimas.length){prev.classList.remove('show');return;}
-  const ult=ultimas[ultimas.length-1];
-  const dietaTxt=Object.entries(ult.sacos).filter(([,v])=>v>0).map(([k,v])=>`${k}: ${v} sacos`).join(', ');
-  prev.textContent=`Última entrega: ${ult.fecha} — ${ult.totalKg.toLocaleString('es-CL')} kg (${dietaTxt})`;
+  const ult=ultimas[0];
+  const dietaTxt=Object.entries(ult.sacos).filter(([,v])=>v>0).map(([k,v])=>`${k}: ${v}s`).join(' · ');
+  prev.textContent=`Última entrega: ${ult.fecha} — ${ult.totalKg.toLocaleString('es-CL')} kg · ${dietaTxt}`;
   prev.classList.add('show');
 }
 
@@ -346,20 +311,18 @@ function obtenerSacos(){
 // ─── ENVIAR ENTREGA ───────────────────────────────────────────
 async function enviarEntrega(){
   const slug=document.getElementById('f-prod').value;
-  const lote=document.getElementById('f-lote').value;
   const fecha=document.getElementById('f-fecha').value;
   const sacos=obtenerSacos();
   const totalSacos=Object.values(sacos).reduce((s,v)=>s+v,0);
   const totalKg=totalSacos*SACOS_KG;
   const obs=document.getElementById('f-obs').value.trim();
   if(!slug){mostrarEst('Selecciona un productor.',false);return;}
-  if(!lote){mostrarEst('Selecciona un lote.',false);return;}
   if(!fecha){mostrarEst('Ingresa la fecha.',false);return;}
   if(!totalSacos){mostrarEst('Ingresa al menos un saco en algún tipo de dieta.',false);return;}
 
   const datos={
     accion:'entrega',
-    slug, productor:PRODUCTORES[slug], lote, fecha,
+    slug, productor:PRODUCTORES[slug], fecha,
     sacos, totalSacos, totalKg, obs,
     timestamp:new Date().toISOString(),
   };
@@ -402,7 +365,7 @@ function renderHistorial(){
     const dietasBadges=Object.entries(e.sacos).filter(([,v])=>v>0).map(([k,v])=>`<span class="badge-dieta">${k}: ${v} s.</span>`).join('');
     return `<div class="entrega-item">
       <div class="ei-header">
-        <div><div class="ei-productor">${e.productor}</div><div class="ei-fecha">${e.fecha} · ${e.lote}</div></div>
+        <div><div class="ei-productor">${e.productor}</div><div class="ei-fecha">${e.fecha}</div></div>
         <div class="ei-total">${e.totalKg.toLocaleString('es-CL')} kg</div>
       </div>
       <div class="ei-detalle">${dietasBadges}</div>
@@ -412,22 +375,33 @@ function renderHistorial(){
 }
 
 // ─── DASHBOARD STOCK ─────────────────────────────────────────
-function renderDashboard(){
+async function renderDashboard(){
+  // Cargar lotes de todos los productores para tener n° de aves
+  await Promise.all(Object.keys(PRODUCTORES).map(async slug=>{
+    if(lotesCache[slug]) return;
+    try{
+      const r=await fetch(`${SCRIPT_URL}?accion=lotes&slug=${encodeURIComponent(slug)}`);
+      const j=await r.json();
+      if(j.ok) lotesCache[slug]=j.lotes;
+    }catch{}
+  }));
   const c=document.getElementById('dash-lista');
   if(!entregasLocal.length){c.innerHTML='<div style="text-align:center;padding:30px;color:var(--gris);font-size:13px">Sin entregas registradas. Agrega la primera entrega.</div>';return;}
   // Calcular stock por productor+lote
+  // Stock por PRODUCTOR (no por lote)
   const stocks={};
   entregasLocal.forEach(e=>{
-    const key=`${e.slug}||${e.lote}`;
-    if(!stocks[key])stocks[key]={productor:e.productor,lote:e.lote,slug:e.slug,totalKg:0,ultimaFecha:e.fecha};
+    const key=e.slug;
+    if(!stocks[key])stocks[key]={productor:e.productor,slug:e.slug,totalKg:0,ultimaFecha:e.fecha};
     stocks[key].totalKg+=e.totalKg;
     if(e.fecha>stocks[key].ultimaFecha)stocks[key].ultimaFecha=e.fecha;
   });
   const hoy=new Date().toISOString().split('T')[0];
   c.innerHTML=Object.values(stocks).sort((a,b)=>a.productor.localeCompare(b.productor)).map(s=>{
     // Consumo estimado: 115g/ave/día — necesitamos aves del lote
-    const loteInfo=lotesCache[s.slug]?.find(l=>l.nombre===s.lote);
-    const aves=loteInfo?.aves||0;
+    // Sumar aves de todos los lotes activos del productor
+    const lotesProductor=lotesCache[s.slug]||[];
+    const aves=lotesProductor.reduce((sum,l)=>sum+(l.aves||0),0);
     const consumoDia=aves*0.115;
     const diasDesde=Math.floor((new Date(hoy)-new Date(s.ultimaFecha))/(86400000));
     const consumoAcum=consumoDia*diasDesde;
@@ -439,7 +413,7 @@ function renderDashboard(){
       cls=diasRest<=5?'dias-crit':diasRest<=12?'dias-warn':'dias-ok';
     }
     return `<div class="dash-card">
-      <div class="dash-nombre">${s.productor} — ${s.lote}</div>
+      <div class="dash-nombre">${s.productor}</div>
       <div class="dash-row"><span class="dash-l">Total entregado</span><span class="dash-v">${s.totalKg.toLocaleString('es-CL')} kg</span></div>
       <div class="dash-row"><span class="dash-l">Stock estimado</span><span class="dash-v">${Math.round(stockActual).toLocaleString('es-CL')} kg</span></div>
       <div class="dash-row"><span class="dash-l">Días de stock</span><span class="dias-badge ${cls}">${txt}</span></div>
