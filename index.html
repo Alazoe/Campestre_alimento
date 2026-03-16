@@ -6,1135 +6,646 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0a2e1a">
 <title>Registro Diario — Huevos La Campestre</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-  :root {
-    --verde-oscuro: #0a2e1a;
-    --verde-medio: #1a5c34;
-    --verde-claro: #2d8a52;
-    --verde-suave: #e8f5ec;
-    --acento: #f5c842;
-    --rojo: #e53e3e;
-    --gris: #6b7280;
-    --gris-claro: #f3f4f6;
-    --blanco: #ffffff;
-    --texto: #111827;
-    --radio: 16px;
-    --sombra: 0 4px 24px rgba(0,0,0,0.10);
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--verde-oscuro);
-    min-height: 100vh;
-    color: var(--texto);
-    padding-bottom: 40px;
-  }
-
-  /* Header */
-  .header {
-    background: var(--verde-oscuro);
-    padding: 28px 20px 20px;
-    text-align: center;
-    position: relative;
-  }
-  .header-logo {
-    font-family: 'DM Serif Display', serif;
-    font-size: 11px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--acento);
-    margin-bottom: 6px;
-  }
-  .header-nombre {
-    font-family: 'DM Serif Display', serif;
-    font-size: 26px;
-    color: var(--blanco);
-    line-height: 1.2;
-  }
-  .header-fecha {
-    font-size: 13px;
-    color: rgba(255,255,255,0.5);
-    margin-top: 6px;
-    font-weight: 300;
-  }
-  .header-egg {
-    font-size: 32px;
-    margin-bottom: 8px;
-  }
-
-  /* Card principal */
-  .card {
-    background: var(--blanco);
-    border-radius: var(--radio) var(--radio) 0 0;
-    margin-top: 0;
-    padding: 28px 20px;
-    min-height: calc(100vh - 160px);
-  }
-
-  /* Secciones del form */
-  .seccion {
-    margin-bottom: 28px;
-  }
-  .seccion-titulo {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--verde-medio);
-    margin-bottom: 14px;
-    padding-bottom: 6px;
-    border-bottom: 2px solid var(--verde-suave);
-  }
-
-  .campo {
-    margin-bottom: 16px;
-  }
-  label {
-    display: block;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--gris);
-    margin-bottom: 6px;
-  }
-  label .req {
-    color: var(--verde-claro);
-    margin-left: 2px;
-  }
-  label .opt {
-    font-weight: 300;
-    color: #9ca3af;
-    font-size: 11px;
-    margin-left: 4px;
-  }
-
-  input[type="date"],
-  input[type="number"],
-  input[type="text"],
-  select,
-  textarea {
-    width: 100%;
-    padding: 14px 16px;
-    border: 1.5px solid #e5e7eb;
-    border-radius: 12px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    color: var(--texto);
-    background: var(--gris-claro);
-    transition: border-color 0.2s, background 0.2s;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  input:focus, select:focus, textarea:focus {
-    outline: none;
-    border-color: var(--verde-claro);
-    background: var(--blanco);
-  }
-  input.obligatorio {
-    border-color: var(--verde-claro);
-    background: #f0faf3;
-  }
-  input.obligatorio:focus {
-    border-color: var(--verde-oscuro);
-  }
-
-  /* Campo numérico grande para alimento */
-  .campo-grande input {
-    font-size: 28px;
-    font-weight: 600;
-    text-align: center;
-    padding: 18px;
-    border-color: var(--verde-claro);
-    background: #f0faf3;
-    color: var(--verde-oscuro);
-  }
-  .campo-grande .unidad {
-    text-align: center;
-    font-size: 12px;
-    color: var(--gris);
-    margin-top: 4px;
-  }
-
-  /* Select de pabellones */
-  .select-wrap { position: relative; }
-  .select-wrap::after {
-    content: '▾';
-    position: absolute;
-    right: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--verde-claro);
-    pointer-events: none;
-    font-size: 18px;
-  }
-  select { padding-right: 40px; cursor: pointer; }
-
-  /* Stepper para aves muertas */
-  .stepper {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .stepper input {
-    text-align: center;
-    flex: 1;
-    font-size: 22px;
-    font-weight: 600;
-  }
-  .stepper-btn {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    border: 2px solid var(--verde-claro);
-    background: var(--blanco);
-    color: var(--verde-claro);
-    font-size: 24px;
-    font-weight: 300;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: all 0.15s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .stepper-btn:active {
-    background: var(--verde-claro);
-    color: var(--blanco);
-    transform: scale(0.95);
-  }
-
-  /* Textarea observaciones */
-  textarea {
-    resize: none;
-    min-height: 80px;
-    font-size: 15px;
-  }
-
-  /* Botón submit */
-  .btn-submit {
-    width: 100%;
-    padding: 18px;
-    background: var(--verde-oscuro);
-    color: var(--blanco);
-    border: none;
-    border-radius: 14px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 17px;
-    font-weight: 600;
-    cursor: pointer;
-    letter-spacing: 0.5px;
-    transition: all 0.2s;
-    position: relative;
-    overflow: hidden;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .btn-submit:active { transform: scale(0.98); }
-  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-submit .spinner {
-    display: none;
-    width: 20px; height: 20px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-top-color: white;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 0 auto;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* Estado: enviando / éxito / error */
-  .estado {
-    display: none;
-    padding: 16px;
-    border-radius: 12px;
-    margin-top: 14px;
-    font-size: 14px;
-    font-weight: 500;
-    text-align: center;
-  }
-  .estado.ok { background: #d1fae5; color: #065f46; display: block; }
-  .estado.error { background: #fee2e2; color: #991b1b; display: block; }
-
-  /* Separador */
-  .separador {
-    height: 1px;
-    background: var(--verde-suave);
-    margin: 28px 0;
-  }
-
-  /* Sección gráfico */
-  .grafico-wrap {
-    background: var(--verde-oscuro);
-    border-radius: 16px;
-    padding: 20px 16px;
-    margin-top: 8px;
-  }
-  .grafico-titulo {
-    font-family: 'DM Serif Display', serif;
-    font-size: 16px;
-    color: var(--blanco);
-    margin-bottom: 4px;
-  }
-  .grafico-subtitulo {
-    font-size: 11px;
-    color: rgba(255,255,255,0.4);
-    margin-bottom: 16px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-  .tabs-grafico {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 16px;
-  }
-  .tab-btn {
-    flex: 1;
-    padding: 7px 4px;
-    border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.15);
-    background: transparent;
-    color: rgba(255,255,255,0.5);
-    font-size: 11px;
-    font-weight: 500;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.15s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .tab-btn.active {
-    background: var(--acento);
-    color: var(--verde-oscuro);
-    border-color: var(--acento);
-    font-weight: 600;
-  }
-  canvas { max-height: 220px; }
-
-  /* KPIs rápidos */
-  .kpis {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-  .kpi {
-    background: rgba(255,255,255,0.06);
-    border-radius: 12px;
-    padding: 12px 14px;
-  }
-  .kpi-label {
-    font-size: 10px;
-    color: rgba(255,255,255,0.4);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 4px;
-  }
-  .kpi-valor {
-    font-size: 22px;
-    font-weight: 600;
-    color: var(--blanco);
-  }
-  .kpi-valor span {
-    font-size: 12px;
-    font-weight: 300;
-    color: rgba(255,255,255,0.5);
-    margin-left: 2px;
-  }
-
-  /* Sin datos */
-  .sin-datos {
-    text-align: center;
-    padding: 30px 0;
-    color: rgba(255,255,255,0.35);
-    font-size: 13px;
-  }
-
-
-  /* Gestión dinámica de lotes */
-  .lotes-lista {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 10px;
-  }
-  .lote-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
-    background: var(--gris-claro);
-    border-radius: 12px;
-    border: 1.5px solid #e5e7eb;
-    transition: border-color 0.2s;
-    cursor: pointer;
-  }
-  .lote-item.seleccionado {
-    border-color: var(--verde-claro);
-    background: #f0faf3;
-  }
-  .lote-radio {
-    width: 18px; height: 18px;
-    border-radius: 50%;
-    border: 2px solid #d1d5db;
-    flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.15s;
-  }
-  .lote-item.seleccionado .lote-radio {
-    border-color: var(--verde-claro);
-    background: var(--verde-claro);
-  }
-  .lote-radio::after {
-    content: '';
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: white;
-    display: none;
-  }
-  .lote-item.seleccionado .lote-radio::after { display: block; }
-  .lote-nombre {
-    flex: 1;
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--texto);
-  }
-  .lote-eliminar {
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    border: none;
-    background: transparent;
-    color: #d1d5db;
-    font-size: 18px;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    line-height: 1;
-    padding: 0;
-    flex-shrink: 0;
-    transition: color 0.15s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .lote-eliminar:hover { color: var(--rojo); }
-  .btn-agregar-lote {
-    width: 100%;
-    padding: 12px;
-    border-radius: 12px;
-    border: 1.5px dashed #d1d5db;
-    background: transparent;
-    color: var(--verde-claro);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    transition: all 0.15s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .btn-agregar-lote:hover {
-    border-color: var(--verde-claro);
-    background: #f0faf3;
-  }
-  /* Modal nuevo lote */
-  .modal-overlay {
-    display: none;
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 200;
-    align-items: flex-end;
-    justify-content: center;
-  }
-  .modal-overlay.activo { display: flex; }
-  .modal-sheet {
-    background: white;
-    border-radius: 20px 20px 0 0;
-    padding: 24px 20px 40px;
-    width: 100%;
-    max-width: 480px;
-    animation: slideModal 0.3s ease;
-  }
-  @keyframes slideModal {
-    from { transform: translateY(100%); }
-    to   { transform: translateY(0); }
-  }
-  .modal-titulo {
-    font-size: 17px;
-    font-weight: 600;
-    color: var(--texto);
-    margin-bottom: 16px;
-  }
-  .modal-input {
-    width: 100%;
-    padding: 14px 16px;
-    border: 1.5px solid var(--verde-claro);
-    border-radius: 12px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    color: var(--texto);
-    background: #f0faf3;
-    margin-bottom: 14px;
-  }
-  .modal-input:focus { outline: none; border-color: var(--verde-oscuro); }
-  .modal-acciones {
-    display: flex; gap: 10px;
-  }
-  .btn-modal-cancel {
-    flex: 1; padding: 13px;
-    border-radius: 12px;
-    border: 1.5px solid #e5e7eb;
-    background: white;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    color: var(--gris);
-    cursor: pointer;
-  }
-  .btn-modal-ok {
-    flex: 2; padding: 13px;
-    border-radius: 12px;
-    border: none;
-    background: var(--verde-oscuro);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    font-weight: 600;
-    color: white;
-    cursor: pointer;
-  }
-
-  /* Pantalla de carga */
-  #pantalla-carga {
-    position: fixed; inset: 0;
-    background: var(--verde-oscuro);
-    display: flex; align-items: center; justify-content: center;
-    flex-direction: column; gap: 16px;
-    z-index: 999;
-  }
-  #pantalla-carga .logo {
-    font-family: 'DM Serif Display', serif;
-    font-size: 22px;
-    color: var(--blanco);
-  }
-  #pantalla-carga .sub {
-    font-size: 12px;
-    color: rgba(255,255,255,0.4);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
-  .carga-bar {
-    width: 120px; height: 2px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-  .carga-fill {
-    height: 100%;
-    background: var(--acento);
-    border-radius: 2px;
-    animation: cargando 1.2s ease forwards;
-  }
-  @keyframes cargando { from { width: 0; } to { width: 100%; } }
-
-  /* Animación entrada */
-  .card { animation: slideUp 0.4s ease; }
-  @keyframes slideUp {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-  }
+:root{--vd:#0a2e1a;--vm:#1a5c34;--vc:#2d8a52;--vs:#e8f5ec;--ac:#f5c842;--rojo:#e53e3e;--gris:#6b7280;--gc:#f3f4f6;--bl:#fff;--tx:#111827;--r:14px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--vd);min-height:100vh;color:var(--tx);padding-bottom:60px}
+.hdr{background:var(--vd);padding:24px 20px 14px;text-align:center}
+.hdr-logo{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--ac);margin-bottom:4px}
+.hdr-nombre{font-family:'DM Serif Display',serif;font-size:24px;color:var(--bl);line-height:1.2}
+.hdr-sub{font-size:12px;color:rgba(255,255,255,.4);margin-top:4px}
+.tabs-nav{display:flex;background:rgba(0,0,0,.2);margin:10px 16px 0;border-radius:12px;padding:4px;gap:4px}
+.tnb{flex:1;padding:9px 4px;border-radius:9px;border:none;background:transparent;color:rgba(255,255,255,.5);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.tnb.active{background:var(--bl);color:var(--vd);font-weight:600}
+.card{background:var(--bl);border-radius:16px 16px 0 0;margin-top:10px;padding:22px 18px;min-height:60vh;animation:sup .4s ease}
+@keyframes sup{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
+.sec{margin-bottom:22px}
+.sec-tit{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--vm);margin-bottom:11px;padding-bottom:5px;border-bottom:2px solid var(--vs)}
+.campo{margin-bottom:13px}
+label{display:block;font-size:13px;font-weight:500;color:var(--gris);margin-bottom:5px}
+label .req{color:var(--vc)}
+label .opt{font-weight:300;color:#9ca3af;font-size:11px;margin-left:3px}
+input[type=date],input[type=number],input[type=text],select,textarea{width:100%;padding:13px 14px;border:1.5px solid #e5e7eb;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:16px;color:var(--tx);background:var(--gc);-webkit-appearance:none;transition:border-color .2s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--vc);background:var(--bl)}
+textarea{resize:none;min-height:70px;font-size:14px}
+.sel-wrap{position:relative}
+.sel-wrap::after{content:'▾';position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--vc);pointer-events:none}
+select{padding-right:36px;cursor:pointer}
+/* GRID DIETAS */
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.dcard{background:var(--gc);border-radius:12px;border:1.5px solid #e5e7eb;padding:11px;transition:border-color .2s}
+.dcard:focus-within{border-color:var(--vc);background:#f0faf3}
+.dlabel{font-size:10px;font-weight:600;color:var(--vm);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.dinput{width:100%;padding:7px 8px;border:1px solid #e5e7eb;border-radius:8px;font-size:15px;font-weight:600;text-align:center;background:var(--bl);color:var(--tx)}
+.dinput:focus{outline:none;border-color:var(--vc)}
+.dsub{font-size:10px;color:var(--gris);text-align:center;margin-top:3px}
+.dtotal{background:#f0faf3;border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-top:8px;border:1px solid #c6e9d0}
+.dtotal-l{font-size:12px;color:var(--vm);font-weight:500}
+.dtotal-v{font-size:19px;font-weight:700;color:var(--vd)}
+/* STEPPER */
+.stpr{display:flex;align-items:center;gap:10px}
+.stpr input{text-align:center;flex:1;font-size:20px;font-weight:600}
+.sbtn{width:44px;height:44px;border-radius:50%;border:2px solid var(--vc);background:var(--bl);color:var(--vc);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent;transition:all .15s}
+.sbtn:active{background:var(--vc);color:var(--bl);transform:scale(.95)}
+/* LOTES */
+.llista{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.litem{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--gc);border-radius:12px;border:1.5px solid #e5e7eb;cursor:pointer;transition:all .15s}
+.litem.sel{border-color:var(--vc);background:#f0faf3}
+.lradio{width:18px;height:18px;border-radius:50%;border:2px solid #d1d5db;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.litem.sel .lradio{border-color:var(--vc);background:var(--vc)}
+.lradio::after{content:'';width:7px;height:7px;border-radius:50%;background:white;display:none}
+.litem.sel .lradio::after{display:block}
+.linfo{flex:1}
+.lnombre{font-size:14px;font-weight:500;color:var(--tx)}
+.lmeta{font-size:11px;color:var(--gris);margin-top:2px}
+.ldel{width:28px;height:28px;border-radius:50%;border:none;background:transparent;color:#d1d5db;font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.ldel:active{color:var(--rojo)}
+.btn-al{width:100%;padding:11px;border-radius:12px;border:1.5px dashed #d1d5db;background:transparent;color:var(--vc);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;-webkit-tap-highlight-color:transparent;transition:all .15s}
+.btn-al:hover{border-color:var(--vc);background:#f0faf3}
+/* ALERTA */
+.alerta{background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:10px 13px;font-size:12px;color:#856404;margin-bottom:11px;display:none}
+.alerta.show{display:block}
+/* STOCK */
+.stock{background:var(--vd);border-radius:12px;padding:14px 16px;margin-bottom:16px;display:none}
+.stock.show{display:block}
+.stock-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.stock-l{font-size:10px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:1px}
+.stock-v{font-size:12px;font-weight:600;color:var(--bl)}
+.stock-dias{font-size:28px;font-weight:700;color:var(--ac);margin-top:2px}
+.stock-dias span{font-size:12px;font-weight:400;color:rgba(255,255,255,.45);margin-left:4px}
+.sbar{height:5px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;margin-top:8px}
+.sfill{height:100%;border-radius:3px;transition:width .5s}
+/* SUBMIT */
+.btn-sub{width:100%;padding:16px;background:var(--vd);color:var(--bl);border:none;border-radius:13px;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s}
+.btn-sub:active{transform:scale(.98)}
+.btn-sub:disabled{opacity:.45}
+.spinner{display:none;width:20px;height:20px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.estado{display:none;padding:13px;border-radius:11px;margin-top:11px;font-size:13px;font-weight:500;text-align:center}
+.estado.ok{background:#d1fae5;color:#065f46;display:block}
+.estado.err{background:#fee2e2;color:#991b1b;display:block}
+/* HISTORIAL */
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.kpi{background:var(--vs);border-radius:11px;padding:10px 12px}
+.kpi-l{font-size:10px;color:var(--vm);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;font-weight:600}
+.kpi-v{font-size:20px;font-weight:700;color:var(--vd)}
+.kpi-v span{font-size:11px;font-weight:400;color:var(--gris);margin-left:2px}
+.gwrap{background:var(--vd);border-radius:14px;padding:16px 14px}
+.gtit{font-family:'DM Serif Display',serif;font-size:15px;color:var(--bl);margin-bottom:2px}
+.gsub{font-size:10px;color:rgba(255,255,255,.35);margin-bottom:13px;letter-spacing:1px;text-transform:uppercase}
+.gtabs{display:flex;gap:5px;margin-bottom:13px;flex-wrap:wrap}
+.gtab{flex:1;min-width:55px;padding:6px 4px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:transparent;color:rgba(255,255,255,.45);font-size:11px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;-webkit-tap-highlight-color:transparent}
+.gtab.active{background:var(--ac);color:var(--vd);border-color:var(--ac);font-weight:600}
+canvas{max-height:200px}
+.sin-datos{text-align:center;padding:22px 0;color:rgba(255,255,255,.3);font-size:13px}
+/* CARGA */
+#pcarga{position:fixed;inset:0;background:var(--vd);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:999}
+#pcarga .logo{font-family:'DM Serif Display',serif;font-size:20px;color:var(--bl)}
+#pcarga .sub{font-size:11px;color:rgba(255,255,255,.35);letter-spacing:2px;text-transform:uppercase}
+.cbar{width:110px;height:2px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
+.cfill{height:100%;background:var(--ac);border-radius:2px;animation:cargando 1.1s ease forwards}
+@keyframes cargando{from{width:0}to{width:100%}}
+/* MODAL */
+.mov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-end;justify-content:center}
+.mov.on{display:flex}
+.msh{background:white;border-radius:20px 20px 0 0;padding:22px 18px 40px;width:100%;max-width:480px;animation:mslide .28s ease}
+@keyframes mslide{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.mtit{font-size:16px;font-weight:600;color:var(--tx);margin-bottom:14px}
+.minp{width:100%;padding:13px 14px;border:1.5px solid var(--vc);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:16px;color:var(--tx);background:#f0faf3;margin-bottom:10px}
+.minp:focus{outline:none;border-color:var(--vd)}
+.mrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.mrow label{font-size:12px;margin-bottom:4px}
+.macc{display:flex;gap:10px}
+.bmc{flex:1;padding:13px;border-radius:12px;border:1.5px solid #e5e7eb;background:white;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--gris);cursor:pointer}
+.bmok{flex:2;padding:13px;border-radius:12px;border:none;background:var(--vd);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:white;cursor:pointer}
+.sep{height:1px;background:var(--vs);margin:20px 0}
 </style>
 </head>
 <body>
 
-<!-- Pantalla de carga -->
-<div id="pantalla-carga">
-  <div style="font-size:40px">🥚</div>
+<div id="pcarga">
+  <div style="font-size:36px">🥚</div>
   <div class="logo">Huevos La Campestre</div>
   <div class="sub">Cargando...</div>
-  <div class="carga-bar"><div class="carga-fill"></div></div>
+  <div class="cbar"><div class="cfill"></div></div>
 </div>
 
-<!-- Header -->
-<div class="header">
-  <div class="header-logo">Huevos La Campestre</div>
-  <div class="header-nombre" id="nombre-productor">Cargando...</div>
-  <div class="header-fecha" id="fecha-hoy"></div>
+<div class="hdr">
+  <div class="hdr-logo">Huevos La Campestre</div>
+  <div class="hdr-nombre" id="hdr-nombre">—</div>
+  <div class="hdr-sub" id="hdr-sub"></div>
 </div>
 
-<!-- Card principal -->
+<div class="tabs-nav">
+  <button class="tnb active" onclick="setTab('registro',this)">📋 Registro</button>
+  <button class="tnb" onclick="setTab('historial',this)">📊 Historial</button>
+  <button class="tnb" onclick="setTab('config',this)">⚙️ Config</button>
+</div>
+
 <div class="card">
 
-  <form id="form-registro" novalidate>
+<!-- TAB REGISTRO -->
+<div id="tab-registro">
+  <div class="stock" id="stock">
+    <div class="stock-row">
+      <div class="stock-l">Stock del productor</div>
+      <div class="stock-v" id="stock-dieta">—</div>
+    </div>
+    <div class="stock-dias" id="stock-dias">—<span>días</span></div>
+    <div class="sbar"><div class="sfill" id="sfill" style="width:0%;background:#06d6a0"></div></div>
+  </div>
 
-    <!-- FECHA -->
-    <div class="seccion">
-      <div class="seccion-titulo">📅 Fecha del registro</div>
-      <div class="campo">
-        <label>Fecha <span class="req">*</span></label>
-        <input type="date" id="fecha" required>
-      </div>
+  <form id="form-reg" novalidate>
+    <div class="sec">
+      <div class="sec-tit">📅 Fecha</div>
+      <input type="date" id="fecha" required>
     </div>
 
-    <!-- PABELLÓN / LOTE DINÁMICO -->
-    <div class="seccion">
-      <div class="seccion-titulo">🏠 Pabellón / Lote</div>
-      <div class="lotes-lista" id="lotes-lista"></div>
-      <button type="button" class="btn-agregar-lote" onclick="abrirModalLote()">
-        <span style="font-size:20px;line-height:1">+</span> Agregar lote
+    <div class="sec">
+      <div class="sec-tit">🏠 Lote / Pabellón</div>
+      <div class="alerta" id="alerta-sem"></div>
+      <div class="llista" id="llista"></div>
+      <button type="button" class="btn-al" onclick="abrirModalLote()">
+        <span style="font-size:18px">+</span> Agregar lote
       </button>
-      <!-- input oculto para el valor del lote seleccionado -->
-      <input type="hidden" id="pabellon" required>
+      <input type="hidden" id="pabellon">
     </div>
 
-    <!-- MODAL NUEVO LOTE -->
-    <div class="modal-overlay" id="modal-lote">
-      <div class="modal-sheet">
-        <div class="modal-titulo">Nuevo pabellón / lote</div>
-        <input type="text" class="modal-input" id="nuevo-lote-nombre"
-               placeholder="ej: Pabellón 2, Lote B, Galpón Sur..."
-               maxlength="40">
-        <div class="modal-acciones">
-          <button type="button" class="btn-modal-cancel" onclick="cerrarModalLote()">Cancelar</button>
-          <button type="button" class="btn-modal-ok" onclick="confirmarNuevoLote()">Agregar</button>
+    <div class="sec">
+      <div class="sec-tit">🌾 Alimento entregado a las aves <span style="color:var(--rojo);font-size:9px;letter-spacing:.5px;text-transform:none;font-weight:400"> — obligatorio</span></div>
+      <div class="dgrid" id="dgrid"></div>
+      <div class="dtotal">
+        <div class="dtotal-l">Total entregado hoy</div>
+        <div class="dtotal-v"><span id="total-kg">0</span> kg</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-tit">🐔 Datos del día <span style="color:#9ca3af;font-size:10px;font-weight:300;text-transform:none;letter-spacing:0">opcional</span></div>
+      <div class="campo">
+        <label>Aves muertas <span class="opt">bajas del día</span></label>
+        <div class="stpr">
+          <button type="button" class="sbtn" onclick="step('muertas',-1)">−</button>
+          <input type="number" id="muertas" value="0" min="0" inputmode="numeric">
+          <button type="button" class="sbtn" onclick="step('muertas',1)">+</button>
         </div>
       </div>
-    </div>
-
-    <!-- ALIMENTO (obligatorio) -->
-    <div class="seccion">
-      <div class="seccion-titulo">🌾 Alimento recibido <span style="color:var(--verde-claro);font-size:10px;letter-spacing:1px">OBLIGATORIO</span></div>
-      <div class="campo campo-grande">
-        <input type="number" id="alimento-kg" class="obligatorio"
-               inputmode="decimal" min="0" step="0.5"
-               placeholder="0" required>
-        <div class="unidad">kilogramos entregados hoy</div>
-      </div>
-    </div>
-
-    <!-- DATOS OPCIONALES -->
-    <div class="seccion">
-      <div class="seccion-titulo">📊 Datos del día <span style="color:#9ca3af;font-size:10px;font-weight:300;letter-spacing:0px;text-transform:none">opcional</span></div>
-
       <div class="campo">
-        <label>Aves muertas <span class="opt">(bajas del día)</span></label>
-        <div class="stepper">
-          <button type="button" class="stepper-btn" onclick="stepperChange('aves-muertas',-1)">−</button>
-          <input type="number" id="aves-muertas" value="0" min="0" inputmode="numeric">
-          <button type="button" class="stepper-btn" onclick="stepperChange('aves-muertas',1)">+</button>
-        </div>
-      </div>
-
-      <div class="campo">
-        <label>Huevos recolectados <span class="opt">(total del día)</span></label>
+        <label>Huevos recolectados <span class="opt">total del día</span></label>
         <input type="number" id="huevos" inputmode="numeric" min="0" placeholder="ej: 850">
       </div>
     </div>
 
-    <!-- OBSERVACIONES -->
-    <div class="seccion">
-      <div class="seccion-titulo">💬 Observaciones</div>
-      <div class="campo">
-        <textarea id="observaciones" placeholder="Cualquier novedad del día: enfermedad, clima, visita, etc."></textarea>
-      </div>
+    <div class="sec">
+      <div class="sec-tit">💬 Observaciones</div>
+      <textarea id="obs" placeholder="Novedad del día: sanidad, clima, visita veterinaria..."></textarea>
     </div>
 
-    <!-- SUBMIT -->
-    <button type="submit" class="btn-submit" id="btn-enviar">
-      <span id="btn-texto">Enviar registro</span>
+    <button type="submit" class="btn-sub" id="btn-env">
+      <span id="btn-txt">Enviar registro</span>
       <div class="spinner" id="spinner"></div>
     </button>
-    <div class="estado" id="estado-msg"></div>
-
+    <div class="estado" id="estado"></div>
   </form>
+</div>
 
-  <div class="separador"></div>
-
-  <!-- GRÁFICO HISTÓRICO -->
-  <div class="grafico-wrap">
-    <div class="grafico-titulo">Mi historial</div>
-    <div class="grafico-subtitulo">Últimos 30 días</div>
-
-    <div class="kpis" id="kpis-wrap">
-      <div class="kpi">
-        <div class="kpi-label">Alimento total</div>
-        <div class="kpi-valor" id="kpi-alimento">—<span>kg</span></div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Postura prom.</div>
-        <div class="kpi-valor" id="kpi-postura">—<span>%</span></div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Bajas totales</div>
-        <div class="kpi-valor" id="kpi-muertas">—<span>aves</span></div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Registros</div>
-        <div class="kpi-valor" id="kpi-registros">—</div>
-      </div>
-    </div>
-
-    <div class="tabs-grafico">
-      <button class="tab-btn active" onclick="cambiarGrafico('alimento',this)">Alimento</button>
-      <button class="tab-btn" onclick="cambiarGrafico('huevos',this)">Huevos</button>
-      <button class="tab-btn" onclick="cambiarGrafico('muertas',this)">Bajas</button>
-    </div>
-
-    <div id="grafico-container">
-      <canvas id="grafico-historico"></canvas>
-      <div class="sin-datos" id="sin-datos" style="display:none">
-        Aún no hay registros históricos.<br>¡Este será el primero!
-      </div>
-    </div>
+<!-- TAB HISTORIAL -->
+<div id="tab-historial" style="display:none">
+  <div class="kpis" id="kpis"></div>
+  <div class="gtabs">
+    <button class="gtab active" onclick="setGraf('alimento',this)">Alimento</button>
+    <button class="gtab" onclick="setGraf('huevos',this)">Huevos</button>
+    <button class="gtab" onclick="setGraf('postura',this)">% Postura</button>
+    <button class="gtab" onclick="setGraf('muertas',this)">Bajas</button>
   </div>
+  <div class="gwrap">
+    <div class="gtit" id="gtit">Alimento entregado (kg)</div>
+    <div class="gsub">Últimos 30 días</div>
+    <canvas id="graf"></canvas>
+    <div class="sin-datos" id="sin-datos">Aún no hay registros. ¡Este será el primero!</div>
+  </div>
+</div>
+
+<!-- TAB CONFIG -->
+<div id="tab-config" style="display:none">
+  <div class="sec">
+    <div class="sec-tit">🏠 Mis lotes activos</div>
+    <div id="cfg-lotes"></div>
+  </div>
+  <div class="sep"></div>
+  <div style="font-size:12px;color:var(--gris);line-height:1.7">
+    <p>Para agregar un lote nuevo, ve a la pestaña <strong>Registro</strong> y usa el botón <em>+ Agregar lote</em>.</p>
+    <p style="margin-top:6px">Para dar de baja un lote usa el botón × — el historial se conserva siempre.</p>
+  </div>
+</div>
 
 </div><!-- /card -->
 
-<script>
-// ── CONFIGURACIÓN ─────────────────────────────────────────────
-// URL del Apps Script Web App — reemplazar con la URL real después de publicar
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxEbhLAa_fsOCdBy3tlHLMaGESt7n-UQ1RdnPWEy-AmMM5VDm9UZlVzYNkf7fUWWSJn9A/exec';
+<!-- MODAL NUEVO LOTE -->
+<div class="mov" id="modal-lote">
+  <div class="msh">
+    <div class="mtit">Configurar nuevo lote</div>
+    <div class="campo"><label>Nombre del lote <span class="req">*</span></label>
+      <input type="text" class="minp" id="nl-nombre" placeholder="ej: Pabellón 1, Lote A..." maxlength="40">
+    </div>
+    <div class="mrow">
+      <div><label>N° de aves <span class="req">*</span></label>
+        <input type="number" class="minp" id="nl-aves" placeholder="ej: 1000" inputmode="numeric" min="1">
+      </div>
+      <div><label>Fecha nacimiento</label>
+        <input type="date" class="minp" id="nl-fecha">
+      </div>
+    </div>
+    <div style="font-size:11px;color:#9ca3af;margin-bottom:14px;line-height:1.5">
+      La semana de vida se calcula automáticamente. Si no tienes la fecha exacta, puedes dejarla en blanco y agregarla después.
+    </div>
+    <div class="macc">
+      <button type="button" class="bmc" onclick="cerrarModal('modal-lote')">Cancelar</button>
+      <button type="button" class="bmok" id="btn-nl-ok" onclick="confirmarNuevoLote()">Guardar lote</button>
+    </div>
+  </div>
+</div>
 
-// Configuración de productores: cada uno tiene su slug de URL y sus pabellones
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxEbhLAa_fsOCdBy3tlHLMaGESt7n-UQ1RdnPWEy-AmMM5VDm9UZlVzYNkf7fUWWSJn9A/exec';
+const DIETAS = ['Inicial','Recría','Pre-postura','Ponedora 1','Ponedora 2','Otro'];
 const PRODUCTORES = {
-  'epulef-criadero':  { nombre: 'Criadero Epulef' },
-  'epulef-frank':     { nombre: 'Frank Epulef' },
-  'nanculen':         { nombre: 'Agrícola Ñanculén' },
-  'emplumados':       { nombre: 'Avícola Emplumados' },
-  'becerra':          { nombre: 'Juan Becerra' },
-  'vergara':          { nombre: 'Cristian Vergara' },
-  'calibu':           { nombre: 'Huevos Calibú' },
-  'santelices':       { nombre: 'Roberto Santelices' },
-  'herrera':          { nombre: 'Juan Pablo Herrera' },
-  'copihue-real':     { nombre: 'Copihue Real' },
+  'epulef-criadero':{nombre:'Criadero Epulef'},
+  'epulef-frank':   {nombre:'Frank Epulef'},
+  'nanculen':       {nombre:'Agrícola Ñanculén'},
+  'emplumados':     {nombre:'Avícola Emplumados'},
+  'becerra':        {nombre:'Juan Becerra'},
+  'vergara':        {nombre:'Cristian Vergara'},
+  'calibu':         {nombre:'Huevos Calibú'},
+  'santelices':     {nombre:'Roberto Santelices'},
+  'herrera':        {nombre:'Juan Pablo Herrera'},
+  'copihue-real':   {nombre:'Copihue Real'},
 };
 
-// ── ESTADO GLOBAL ─────────────────────────────────────────────
-let slugActual = '';
-let productorActual = null;
-let historico = [];
-let graficoInstance = null;
-let campoActual = 'alimento';
+// ─── ESTADO ───────────────────────────────────────────────────
+let slug='', prod=null, lotes=[], loteActual=null;
+let historico=[], grafActual='alimento', grafInst=null;
+let stockProductor=0, dietaGuardada=null;
 
-// ── INICIALIZACIÓN ────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  // Detectar slug desde URL: /campestre/epulef → slug = "epulef"
-  const path = window.location.pathname;
-  const partes = path.split('/').filter(Boolean);
-  slugActual = partes[partes.length - 1] || '';
-
-  // También soportar ?p=slug como fallback
-  const params = new URLSearchParams(window.location.search);
-  if (!slugActual || !PRODUCTORES[slugActual]) {
-    slugActual = params.get('p') || '';
-  }
-
-  productorActual = PRODUCTORES[slugActual] || null;
-
-  setTimeout(() => {
-    document.getElementById('pantalla-carga').style.display = 'none';
-    inicializar();
-  }, 1000);
+// ─── BOOT ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  const p=new URLSearchParams(location.search);
+  slug=p.get('p')||location.pathname.split('/').filter(Boolean).pop()||'';
+  prod=PRODUCTORES[slug]||null;
+  setTimeout(()=>{document.getElementById('pcarga').style.display='none'; init();},900);
 });
 
-async function inicializar() {
-  if (!productorActual) {
-    document.getElementById('nombre-productor').textContent = 'Enlace no válido';
-    document.querySelector('.card').innerHTML = `
-      <div style="text-align:center;padding:40px 20px">
-        <div style="font-size:48px;margin-bottom:16px">🔒</div>
-        <div style="font-size:18px;font-weight:600;color:#111;margin-bottom:8px">Enlace no reconocido</div>
-        <div style="font-size:14px;color:#6b7280">Usa el enlace que te entregó Huevos La Campestre.</div>
-      </div>`;
+async function init(){
+  if(!prod){
+    document.querySelector('.card').innerHTML=`<div style="text-align:center;padding:40px 16px"><div style="font-size:48px">🔒</div><p style="font-size:17px;font-weight:600;margin:12px 0 6px">Enlace no válido</p><p style="color:#6b7280;font-size:14px">Usa el enlace que te entregó Huevos La Campestre.</p></div>`;
     return;
   }
-
-  // Nombre y fecha
-  document.getElementById('nombre-productor').textContent = productorActual.nombre;
-  const hoy = new Date();
-  document.getElementById('fecha-hoy').textContent =
-    hoy.toLocaleDateString('es-CL', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-
-  // Fecha por defecto = hoy
-  document.getElementById('fecha').value = hoy.toISOString().split('T')[0];
-
-  // Cargar lotes desde Google Sheet
+  document.getElementById('hdr-nombre').textContent=prod.nombre;
+  document.getElementById('hdr-sub').textContent=new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('fecha').value=new Date().toISOString().split('T')[0];
+  construirDietaGrid();
   await cargarLotes();
-
-  // Form submit
-  document.getElementById('form-registro').addEventListener('submit', enviarRegistro);
-
-  // Cerrar modal al tocar overlay
-  document.getElementById('modal-lote').addEventListener('click', function(e) {
-    if (e.target === this) cerrarModalLote();
-  });
-
-  // Enter en input del modal
-  document.getElementById('nuevo-lote-nombre').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') { e.preventDefault(); confirmarNuevoLote(); }
-  });
-
-  // Cargar histórico
   cargarHistoricoLocal();
-  renderGrafico('alimento');
+  renderKpis(); renderGraf('alimento');
+  document.getElementById('form-reg').addEventListener('submit',enviar);
+  document.getElementById('modal-lote').addEventListener('click',e=>{if(e.target===e.currentTarget)cerrarModal('modal-lote');});
 }
 
-// ── GESTIÓN DE LOTES — fuente de verdad: Google Sheet ────────
-// Cache local solo para cuando no hay internet
-function keyLotesCache() { return `campestre_lotes_cache_${slugActual}`; }
+// ─── TABS ─────────────────────────────────────────────────────
+function setTab(tab,btn){
+  ['registro','historial','config'].forEach(t=>document.getElementById('tab-'+t).style.display=t===tab?'':'none');
+  document.querySelectorAll('.tnb').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(tab==='historial'){renderKpis();renderGraf(grafActual);}
+  if(tab==='config')renderCfgLotes();
+}
 
-// Cargar lotes activos desde el Sheet al iniciar
-async function cargarLotes() {
-  mostrarCargandoLotes(true);
-  try {
-    const url = `${SCRIPT_URL}?accion=lotes&slug=${encodeURIComponent(slugActual)}`;
-    const resp = await fetch(url);
-    const json = await resp.json();
-    if (json.ok && json.lotes.length > 0) {
-      // Guardar en caché local
-      localStorage.setItem(keyLotesCache(), JSON.stringify(json.lotes));
-      renderLotes(json.lotes);
+// ─── DIETA GRID ───────────────────────────────────────────────
+function sdiet(d){return d.toLowerCase().replace(/[^a-z0-9]/g,'_');}
+function construirDietaGrid(){
+  document.getElementById('dgrid').innerHTML=DIETAS.map(d=>`
+    <div class="dcard">
+      <div class="dlabel">${d}</div>
+      <input class="dinput" type="number" id="d_${sdiet(d)}" min="0" value="0"
+             inputmode="decimal" step="0.5" oninput="recalcTotal()">
+      <div class="dsub">kg</div>
+    </div>`).join('');
+}
+function recalcTotal(){
+  let t=0;
+  DIETAS.forEach(d=>{t+=parseFloat(document.getElementById('d_'+sdiet(d))?.value||0)||0;});
+  document.getElementById('total-kg').textContent=Math.round(t*10)/10;
+}
+function obtenerDietas(){
+  const o={};
+  DIETAS.forEach(d=>{o[d]=parseFloat(document.getElementById('d_'+sdiet(d))?.value||0)||0;});
+  return o;
+}
+
+// ─── LOTES ────────────────────────────────────────────────────
+function cacheKey(){return `lotes_${slug}`;}
+
+async function cargarLotes(){
+  try{
+    const r=await fetch(`${SCRIPT_URL}?accion=lotes&slug=${encodeURIComponent(slug)}`);
+    const j=await r.json();
+    if(j.ok&&j.lotes.length){
+      lotes=j.lotes;
+      stockProductor=j.stockKg||0;
+      dietaGuardada=j.dieta||null;
+      localStorage.setItem(cacheKey(),JSON.stringify(lotes));
+      localStorage.setItem(cacheKey()+'_stock', stockProductor);
+      if(dietaGuardada) localStorage.setItem(cacheKey()+'_dieta', dietaGuardada);
     } else {
-      // Sin lotes en Sheet → primer acceso, inicializar con "Lote 1"
-      await crearLoteEnSheet('Lote 1');
-      renderLotes(['Lote 1']);
+      lotes=[];
+      mostrarConfigInicial();
+      return;
     }
-  } catch (err) {
-    // Sin internet → usar caché local
-    const cache = JSON.parse(localStorage.getItem(keyLotesCache()) || '[]');
-    if (cache.length) {
-      renderLotes(cache);
-      mostrarEstado('Sin conexión — mostrando lotes guardados localmente.', false);
-    } else {
-      // Nunca se cargaron: mostrar "Lote 1" de emergencia
-      renderLotes(['Lote 1']);
-      mostrarEstado('Sin conexión. Los lotes se sincronizarán cuando vuelva la red.', false);
-    }
-  } finally {
-    mostrarCargandoLotes(false);
+  }catch{
+    lotes=JSON.parse(localStorage.getItem(cacheKey())||'[]');
+    stockProductor=parseFloat(localStorage.getItem(cacheKey()+'_stock'))||0;
+    dietaGuardada=localStorage.getItem(cacheKey()+'_dieta')||null;
+    if(!lotes.length){mostrarConfigInicial();return;}
   }
+  renderLotes();
+  precargarDieta();
+  actualizarStock();
 }
 
-function mostrarCargandoLotes(loading) {
-  const lista = document.getElementById('lotes-lista');
-  if (loading) {
-    lista.innerHTML = '<div style="padding:14px;color:#9ca3af;font-size:13px;text-align:center">Cargando lotes...</div>';
-  }
+function mostrarConfigInicial(){
+  // Forzar que configure antes de poder registrar
+  document.getElementById('btn-env').disabled=true;
+  // Pre-rellenar modal con Lote 1
+  document.getElementById('nl-nombre').value='Lote 1';
+  document.getElementById('modal-lote').classList.add('on');
 }
 
-function renderLotes(lotes) {
-  const lista = document.getElementById('lotes-lista');
-  const inputHidden = document.getElementById('pabellon');
+function renderLotes(){
+  const cont=document.getElementById('llista');
+  if(!lotes.length){cont.innerHTML='<div style="font-size:13px;color:#9ca3af;padding:8px 0">Sin lotes activos.</div>';return;}
+  if(!loteActual||!lotes.find(l=>l.nombre===loteActual.nombre)) loteActual=lotes[0];
+  document.getElementById('pabellon').value=loteActual.nombre;
 
-  // Mantener selección actual si sigue existiendo, si no → primero
-  let selActual = inputHidden.value;
-  if (!lotes.includes(selActual)) selActual = lotes[0] || '';
-  inputHidden.value = selActual;
-
-  lista.innerHTML = lotes.map(lote => {
-    const nombreEsc = lote.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-    return `
-    <div class="lote-item ${lote === selActual ? 'seleccionado' : ''}"
-         onclick="seleccionarLote('${nombreEsc}', this)">
-      <div class="lote-radio"></div>
-      <div class="lote-nombre">${lote}</div>
-      ${lotes.length > 1
-        ? `<button type="button" class="lote-eliminar"
-             title="Dar de baja este lote"
-             onclick="event.stopPropagation(); darDeBajaLote('${nombreEsc}')">×</button>`
-        : ''}
+  cont.innerHTML=lotes.map((l,i)=>{
+    const sem=calcSem(l.fechaNac);
+    const semTxt=sem!==null?`Sem. ${sem} de vida`:'Sin fecha nacimiento';
+    const warn=sem!==null&&sem<17?' ⚠️':'';
+    const lj=JSON.stringify(l).replace(/"/g,'&quot;');
+    return `<div class="litem ${l.nombre===loteActual.nombre?'sel':''}" onclick="selLote(this,'${escJs(l.nombre)}')">
+      <div class="lradio"></div>
+      <div class="linfo">
+        <div class="lnombre">${l.nombre}</div>
+        <div class="lmeta">${l.aves.toLocaleString('es-CL')} aves · ${warn}${semTxt}</div>
+      </div>
+      ${lotes.length>1?`<button type="button" class="ldel" onclick="event.stopPropagation();bajaLote('${escJs(l.nombre)}')">×</button>`:''}
     </div>`;
   }).join('');
+
+  document.getElementById('btn-env').disabled=false;
+
+  // Alerta semana de vida
+  const al=document.getElementById('alerta-sem');
+  const s=calcSem(loteActual.fechaNac);
+  if(s===null){al.textContent='⚠️ Este lote no tiene fecha de nacimiento. Agrégala para ver la semana de vida.';al.classList.add('show');}
+  else if(s<17){al.textContent=`⚠️ Semana ${s}: lote en crecimiento, aún no en postura. Considera dieta Pre-postura.`;al.classList.add('show');}
+  else al.classList.remove('show');
+
+  actualizarStock();
 }
 
-function seleccionarLote(nombre, el) {
-  document.getElementById('pabellon').value = nombre;
-  document.querySelectorAll('.lote-item').forEach(i => i.classList.remove('seleccionado'));
-  el.classList.add('seleccionado');
+function escJs(s){return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+
+function selLote(el,nombre){
+  loteActual=lotes.find(l=>l.nombre===nombre)||lotes[0];
+  document.getElementById('pabellon').value=loteActual.nombre;
+  document.querySelectorAll('.litem').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel');
+  // Actualizar alerta
+  const al=document.getElementById('alerta-sem');
+  const s=calcSem(loteActual.fechaNac);
+  if(s===null){al.textContent='⚠️ Este lote no tiene fecha de nacimiento.';al.classList.add('show');}
+  else if(s<17){al.textContent=`⚠️ Semana ${s}: lote en crecimiento.`;al.classList.add('show');}
+  else al.classList.remove('show');
+  actualizarStock();
 }
 
-// Dar de baja un lote → queda inactivo en Sheet (historial intacto)
-async function darDeBajaLote(nombre) {
-  const cache = JSON.parse(localStorage.getItem(keyLotesCache()) || '[]');
-  if (cache.length <= 1) {
-    mostrarEstado('Debe haber al menos un lote activo.', false);
-    return;
-  }
-  if (!confirm(`¿Dar de baja el lote "${nombre}"?\nEl historial se conserva, solo dejará de aparecer.`)) return;
-
-  try {
-    await fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accion: 'baja_lote', slug: slugActual, lote: nombre }),
-    });
-    // Actualizar caché local
-    const nuevo = cache.filter(l => l !== nombre);
-    localStorage.setItem(keyLotesCache(), JSON.stringify(nuevo));
-    renderLotes(nuevo);
-    mostrarEstado(`Lote "${nombre}" dado de baja correctamente.`, true);
-  } catch (err) {
-    mostrarEstado('Error al dar de baja. Intenta de nuevo.', false);
-  }
+function calcSem(f){
+  if(!f)return null;
+  const d=new Date(f);
+  return isNaN(d)?null:Math.floor((Date.now()-d)/(7*24*3600*1000));
 }
 
-// Crear un lote nuevo en el Sheet
-async function crearLoteEnSheet(nombre) {
-  try {
-    await fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        accion: 'nuevo_lote',
-        slug: slugActual,
-        productor: productorActual.nombre,
-        lote: nombre,
-      }),
-    });
-  } catch (err) {
-    // Si falla, igual lo mostramos (se sincronizará cuando haya red)
-    console.warn('Error al crear lote en Sheet:', err);
-  }
+async function abrirModalLote(){
+  document.getElementById('nl-nombre').value='';
+  document.getElementById('nl-aves').value='';
+  document.getElementById('nl-fecha').value='';
+  document.getElementById('modal-lote').classList.add('on');
+  setTimeout(()=>document.getElementById('nl-nombre').focus(),300);
 }
 
-function abrirModalLote() {
-  document.getElementById('nuevo-lote-nombre').value = '';
-  document.getElementById('modal-lote').classList.add('activo');
-  setTimeout(() => document.getElementById('nuevo-lote-nombre').focus(), 300);
+function cerrarModal(id){document.getElementById(id).classList.remove('on');}
+
+function precargarDieta(){
+  if(!dietaGuardada) return;
+  // Poner en 0 todas las dietas primero
+  DIETAS.forEach(d=>{const el=document.getElementById('d_'+sdiet(d));if(el)el.value=0;});
+  // Marcar solo la dieta guardada con foco visual (no poner kg, el usuario los ingresa)
+  const el=document.getElementById('d_'+sdiet(dietaGuardada));
+  if(el){el.closest('.dcard').style.borderColor='var(--vc)';el.closest('.dcard').style.background='#f0faf3';}
+  recalcTotal();
 }
 
-function cerrarModalLote() {
-  document.getElementById('modal-lote').classList.remove('activo');
+
+
+async function confirmarNuevoLote(){
+  const nombre=document.getElementById('nl-nombre').value.trim();
+  const aves=parseInt(document.getElementById('nl-aves').value)||0;
+  const fecha=document.getElementById('nl-fecha').value;
+  if(!nombre){alert('Escribe el nombre del lote.');return;}
+  if(!aves){alert('Ingresa el número de aves.');return;}
+  if(lotes.find(l=>l.nombre===nombre)){alert('Ya existe un lote con ese nombre.');return;}
+  const btn=document.getElementById('btn-nl-ok');
+  btn.textContent='Guardando...';btn.disabled=true;
+  const nuevoLote={nombre,aves,fechaNac:fecha||null};
+  try{await post({accion:'nuevo_lote',slug,productor:prod.nombre,lote:nombre,aves,fechaNac:fecha||''});}
+  catch(e){console.warn(e);}
+  lotes.push(nuevoLote);loteActual=nuevoLote;
+  localStorage.setItem(cacheKey(),JSON.stringify(lotes));
+  renderLotes();
+  btn.textContent='Guardar lote';btn.disabled=false;
+  cerrarModal('modal-lote');
+  mostrarEstado(`Lote "${nombre}" guardado correctamente.`,true);
 }
 
-async function confirmarNuevoLote() {
-  const nombre = document.getElementById('nuevo-lote-nombre').value.trim();
-  if (!nombre) return;
-
-  const cache = JSON.parse(localStorage.getItem(keyLotesCache()) || '[]');
-  if (cache.includes(nombre)) {
-    alert('Ya existe un lote con ese nombre.');
-    return;
-  }
-
-  // Deshabilitar botón mientras guarda
-  const btnOk = document.querySelector('.btn-modal-ok');
-  btnOk.textContent = 'Guardando...';
-  btnOk.disabled = true;
-
-  // Guardar en Sheet
-  await crearLoteEnSheet(nombre);
-
-  // Actualizar caché local
-  const nuevo = [...cache, nombre];
-  localStorage.setItem(keyLotesCache(), JSON.stringify(nuevo));
-
-  // Seleccionar el nuevo lote automáticamente
-  document.getElementById('pabellon').value = nombre;
-  renderLotes(nuevo);
-  document.querySelectorAll('.lote-item').forEach(el => {
-    if (el.querySelector('.lote-nombre').textContent === nombre)
-      el.classList.add('seleccionado');
-    else
-      el.classList.remove('seleccionado');
-  });
-
-  btnOk.textContent = 'Agregar';
-  btnOk.disabled = false;
-  cerrarModalLote();
-  mostrarEstado(`Lote "${nombre}" agregado correctamente.`, true);
+async function bajaLote(nombre){
+  if(!confirm(`¿Dar de baja el lote "${nombre}"?\nEl historial de registros se conserva.`))return;
+  try{await post({accion:'baja_lote',slug,lote:nombre});}catch(e){}
+  lotes=lotes.filter(l=>l.nombre!==nombre);
+  localStorage.setItem(cacheKey(),JSON.stringify(lotes));
+  renderLotes();
 }
 
-// ── STEPPER ───────────────────────────────────────────────────
-function stepperChange(id, delta) {
-  const inp = document.getElementById(id);
-  const val = parseInt(inp.value) || 0;
-  inp.value = Math.max(0, val + delta);
+// ─── STOCK ───────────────────────────────────────────────────
+function actualizarStock(){
+  // Stock es a nivel PRODUCTOR, no por lote
+  if(stockProductor<=0){document.getElementById('stock').classList.remove('show');return;}
+  // Consumo total de todos los lotes activos del productor
+  const totalAves=lotes.reduce((s,l)=>s+(l.aves||0),0);
+  const consumoDia=totalAves*0.115;
+  const dias=consumoDia>0?Math.round(stockProductor/consumoDia):0;
+  // Stock máximo = el mayor stock que hemos tenido (approx desde localStorage)
+  const stockMax=parseFloat(localStorage.getItem(cacheKey()+'_stockMax'))||stockProductor;
+  if(stockProductor>stockMax) localStorage.setItem(cacheKey()+'_stockMax', stockProductor);
+  const pct=stockMax>0?Math.min(100,Math.round(stockProductor/stockMax*100)):100;
+  document.getElementById('stock').classList.add('show');
+  document.getElementById('stock-dias').innerHTML=`${dias}<span>días est.</span>`;
+  const fill=document.getElementById('sfill');
+  fill.style.width=pct+'%';
+  fill.style.background=dias<=5?'#ef4444':dias<=12?'#f59e0b':'#06d6a0';
+  document.getElementById('stock-dieta').textContent=dietaGuardada||'—';
 }
 
-// ── ENVIAR REGISTRO ───────────────────────────────────────────
-async function enviarRegistro(e) {
+// ─── ENVIAR ───────────────────────────────────────────────────
+async function enviar(e){
   e.preventDefault();
-
-  const alimento = parseFloat(document.getElementById('alimento-kg').value);
-  const pabellon = document.getElementById('pabellon').value;
-  const fecha    = document.getElementById('fecha').value;
-
-  // Validación
-  if (!pabellon) { mostrarEstado('Selecciona un pabellón.', false); return; }
-  if (!fecha)    { mostrarEstado('Ingresa la fecha.', false); return; }
-  if (!alimento && alimento !== 0) { mostrarEstado('Ingresa los kg de alimento (puede ser 0 si no hubo entrega).', false); return; }
-
-  const datos = {
-    accion:       'registro',
-    slug:         slugActual,
-    productor:    productorActual.nombre,
-    pabellon,
-    fecha,
-    alimento_kg:  alimento,
-    aves_muertas: parseInt(document.getElementById('aves-muertas').value) || 0,
-    huevos:       parseInt(document.getElementById('huevos').value) || 0,
-    observaciones: document.getElementById('observaciones').value.trim(),
-    timestamp:    new Date().toISOString(),
+  const fecha=document.getElementById('fecha').value;
+  const pabellon=document.getElementById('pabellon').value;
+  const dietas=obtenerDietas();
+  const totalKg=Object.values(dietas).reduce((s,v)=>s+v,0);
+  if(!pabellon){mostrarEstado('Selecciona un lote.',false);return;}
+  if(!fecha){mostrarEstado('Ingresa la fecha.',false);return;}
+  // Detectar dieta principal usada (la de mayor kg)
+  const dietaUsada=Object.entries(dietas).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1])[0]?.[0]||null;
+  // Guardar si cambió
+  if(dietaUsada && dietaUsada!==dietaGuardada){
+    dietaGuardada=dietaUsada;
+    localStorage.setItem(cacheKey()+'_dieta', dietaGuardada);
+    post({accion:'set_dieta',slug,dieta:dietaUsada}).catch(()=>{});
+  }
+  const datos={
+    accion:'registro',slug,productor:prod.nombre,pabellon,fecha,
+    dieta:dietaUsada,
+    dietas,total_kg:totalKg,
+    muertas:parseInt(document.getElementById('muertas').value)||0,
+    huevos:parseInt(document.getElementById('huevos').value)||0,
+    obs:document.getElementById('obs').value.trim(),
+    aves:loteActual?.aves||0,
+    timestamp:new Date().toISOString(),
   };
-
-  // UI: cargando
-  const btn = document.getElementById('btn-enviar');
-  document.getElementById('btn-texto').style.display = 'none';
-  document.getElementById('spinner').style.display = 'block';
-  btn.disabled = true;
-
-  try {
-    await fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(datos),
-    });
-
-    // Guardar en localStorage
-    guardarHistoricoLocal(datos);
-    mostrarEstado('✅ Registro enviado correctamente. ¡Gracias!', true);
-    document.getElementById('form-registro').reset();
-    document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
-    document.getElementById('aves-muertas').value = 0;
-
-    // Mantener lotes y reseleccionar el primero
-    cargarLotes();
-    // Actualizar gráfico
-    cargarHistoricoLocal();
-    renderGrafico(campoActual);
-
-  } catch (err) {
-    // Con no-cors no podemos detectar error real, guardamos igual localmente
-    guardarHistoricoLocal(datos);
-    mostrarEstado('✅ Registro guardado localmente. Se sincronizará pronto.', true);
-  } finally {
-    document.getElementById('btn-texto').style.display = 'block';
-    document.getElementById('spinner').style.display = 'none';
-    btn.disabled = false;
-  }
+  setLoading(true);
+  try{
+    await post(datos);
+    guardarLocal(datos);
+    mostrarEstado('✅ Registro enviado. ¡Gracias!',true);
+    resetForm();
+    cargarHistoricoLocal();renderKpis();renderGraf(grafActual);actualizarStock();
+  }catch{
+    guardarLocal(datos);
+    mostrarEstado('✅ Guardado localmente. Se enviará con conexión.',true);
+  }finally{setLoading(false);}
 }
 
-function mostrarEstado(msg, ok) {
-  const el = document.getElementById('estado-msg');
-  el.textContent = msg;
-  el.className = 'estado ' + (ok ? 'ok' : 'error');
-  setTimeout(() => { el.className = 'estado'; }, 5000);
+function resetForm(){
+  DIETAS.forEach(d=>{const el=document.getElementById('d_'+sdiet(d));if(el)el.value=0;});
+  recalcTotal();
+  document.getElementById('muertas').value=0;
+  document.getElementById('huevos').value='';
+  document.getElementById('obs').value='';
+  document.getElementById('fecha').value=new Date().toISOString().split('T')[0];
+}
+function setLoading(on){
+  document.getElementById('btn-txt').style.display=on?'none':'';
+  document.getElementById('spinner').style.display=on?'block':'none';
+  document.getElementById('btn-env').disabled=on;
+}
+function mostrarEstado(msg,ok){
+  const el=document.getElementById('estado');
+  el.textContent=msg;el.className='estado '+(ok?'ok':'err');
+  setTimeout(()=>el.className='estado',5000);
 }
 
-// ── HISTÓRICO LOCAL ───────────────────────────────────────────
-function keyStorage() { return `campestre_hist_${slugActual}`; }
-
-function guardarHistoricoLocal(datos) {
-  const hist = JSON.parse(localStorage.getItem(keyStorage()) || '[]');
-  hist.push(datos);
-  // Mantener últimos 90 registros
-  if (hist.length > 90) hist.splice(0, hist.length - 90);
-  localStorage.setItem(keyStorage(), JSON.stringify(hist));
+// ─── HISTÓRICO LOCAL ─────────────────────────────────────────
+function histKey(){return `hist_${slug}`;}
+function guardarLocal(d){
+  const h=JSON.parse(localStorage.getItem(histKey())||'[]');
+  h.push(d);if(h.length>120)h.splice(0,h.length-120);
+  localStorage.setItem(histKey(),JSON.stringify(h));
+}
+function cargarHistoricoLocal(){
+  historico=JSON.parse(localStorage.getItem(histKey())||'[]');
+  historico.sort((a,b)=>a.fecha.localeCompare(b.fecha));
 }
 
-function cargarHistoricoLocal() {
-  historico = JSON.parse(localStorage.getItem(keyStorage()) || '[]');
-  historico.sort((a, b) => a.fecha.localeCompare(b.fecha));
-
-  // KPIs
-  const totalAlimento = historico.reduce((s, r) => s + (r.alimento_kg || 0), 0);
-  const totalMuertas  = historico.reduce((s, r) => s + (r.aves_muertas || 0), 0);
-  const regsConHuevos = historico.filter(r => r.huevos > 0);
-
-  document.getElementById('kpi-alimento').innerHTML =
-    `${totalAlimento.toLocaleString('es-CL')}<span>kg</span>`;
-  document.getElementById('kpi-muertas').innerHTML =
-    `${totalMuertas.toLocaleString('es-CL')}<span>aves</span>`;
-  document.getElementById('kpi-registros').textContent = historico.length;
-
-  if (regsConHuevos.length > 0) {
-    // Postura promedio requiere aves — mostramos huevos promedio si no hay aves
-    const promHuevos = Math.round(regsConHuevos.reduce((s,r) => s + r.huevos, 0) / regsConHuevos.length);
-    document.getElementById('kpi-postura').innerHTML = `${promHuevos}<span>huevos/d</span>`;
-  } else {
-    document.getElementById('kpi-postura').innerHTML = `—<span>%</span>`;
-  }
+// ─── KPIs ────────────────────────────────────────────────────
+function renderKpis(){
+  const h=historico.slice(-30);
+  const totA=h.reduce((s,r)=>s+(r.total_kg||0),0);
+  const totM=h.reduce((s,r)=>s+(r.muertas||0),0);
+  const conH=h.filter(r=>r.huevos>0&&r.aves>0);
+  const prom=conH.length?Math.round(conH.reduce((s,r)=>s+(r.huevos/r.aves*100),0)/conH.length*10)/10:null;
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi"><div class="kpi-l">Alimento 30d</div><div class="kpi-v">${Math.round(totA).toLocaleString('es-CL')}<span>kg</span></div></div>
+    <div class="kpi"><div class="kpi-l">% Postura prom.</div><div class="kpi-v">${prom!==null?prom:'—'}<span>%</span></div></div>
+    <div class="kpi"><div class="kpi-l">Bajas 30d</div><div class="kpi-v">${totM}<span>aves</span></div></div>
+    <div class="kpi"><div class="kpi-l">Registros totales</div><div class="kpi-v">${historico.length}</div></div>`;
 }
 
-// ── GRÁFICO ───────────────────────────────────────────────────
-function cambiarGrafico(campo, btn) {
-  campoActual = campo;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderGrafico(campo);
+// ─── GRÁFICO ─────────────────────────────────────────────────
+const GTIT={alimento:'Alimento entregado (kg)',huevos:'Huevos recolectados',postura:'% Postura',muertas:'Bajas (aves)'};
+function setGraf(c,btn){
+  grafActual=c;
+  document.querySelectorAll('.gtab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');renderGraf(c);
 }
-
-function renderGrafico(campo) {
-  const container = document.getElementById('grafico-container');
-  const sinDatos  = document.getElementById('sin-datos');
-  const canvas    = document.getElementById('grafico-historico');
-
-  // Últimos 30 días
-  const ultimos30 = historico.slice(-30);
-
-  if (!ultimos30.length) {
-    canvas.style.display = 'none';
-    sinDatos.style.display = 'block';
-    return;
-  }
-  canvas.style.display = 'block';
-  sinDatos.style.display = 'none';
-
-  const labels = ultimos30.map(r => {
-    const [y,m,d] = r.fecha.split('-');
-    return `${d}/${m}`;
-  });
-
-  const config = {
-    alimento: { data: ultimos30.map(r => r.alimento_kg || 0), label: 'Alimento (kg)', color: '#f5c842' },
-    huevos:   { data: ultimos30.map(r => r.huevos || 0),      label: 'Huevos',        color: '#6ee7b7' },
-    muertas:  { data: ultimos30.map(r => r.aves_muertas || 0),label: 'Bajas',          color: '#fca5a5' },
-  }[campo];
-
-  if (graficoInstance) graficoInstance.destroy();
-
-  graficoInstance = new Chart(canvas, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        label: config.label,
-        data: config.data,
-        backgroundColor: config.color + 'bb',
-        borderColor: config.color,
-        borderWidth: 1.5,
-        borderRadius: 6,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => ` ${ctx.parsed.y.toLocaleString('es-CL')} ${campo === 'alimento' ? 'kg' : campo === 'muertas' ? 'aves' : 'huevos'}`
-          }
-        }
-      },
-      scales: {
-        x: {
-          ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 } },
-          grid: { color: 'rgba(255,255,255,0.05)' },
-        },
-        y: {
-          ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 } },
-          grid: { color: 'rgba(255,255,255,0.08)' },
-          beginAtZero: true,
-        }
+function renderGraf(campo){
+  const cv=document.getElementById('graf');
+  const sd=document.getElementById('sin-datos');
+  document.getElementById('gtit').textContent=GTIT[campo]||campo;
+  const h=historico.slice(-30);
+  if(!h.length){cv.style.display='none';sd.style.display='block';return;}
+  cv.style.display='';sd.style.display='none';
+  const labels=h.map(r=>{const[,m,d]=r.fecha.split('-');return `${d}/${m}`;});
+  const cfgs={
+    alimento:{data:h.map(r=>r.total_kg||0),color:'#f5c842',type:'bar'},
+    huevos:  {data:h.map(r=>r.huevos||0),color:'#6ee7b7',type:'bar'},
+    postura: {data:h.map(r=>r.aves>0&&r.huevos>0?Math.round(r.huevos/r.aves*1000)/10:null),color:'#818cf8',type:'line'},
+    muertas: {data:h.map(r=>r.muertas||0),color:'#fca5a5',type:'bar'},
+  };
+  const cfg=cfgs[campo];
+  if(grafInst)grafInst.destroy();
+  grafInst=new Chart(cv,{
+    type:cfg.type,
+    data:{labels,datasets:[{label:GTIT[campo],data:cfg.data,backgroundColor:cfg.color+'99',borderColor:cfg.color,borderWidth:1.5,borderRadius:5,spanGaps:true,tension:.35,pointRadius:3,pointBackgroundColor:cfg.color}]},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.parsed.y!==null?ctx.parsed.y.toLocaleString('es-CL'):'sin dato'}`}}},
+      scales:{
+        x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}},
+        y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:10}},grid:{color:'rgba(255,255,255,.08)'},beginAtZero:true}
       }
     }
   });
 }
+
+// ─── CONFIG LOTES ────────────────────────────────────────────
+function renderCfgLotes(){
+  const c=document.getElementById('cfg-lotes');
+  if(!lotes.length){c.innerHTML='<div style="font-size:13px;color:#9ca3af">Sin lotes configurados.</div>';return;}
+  c.innerHTML=lotes.map(l=>{
+    const s=calcSem(l.fechaNac);
+    return `<div style="background:var(--gc);border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid #e5e7eb">
+      <div style="font-size:14px;font-weight:600;color:var(--tx);margin-bottom:3px">${l.nombre}</div>
+      <div style="font-size:12px;color:var(--gris)">${l.aves.toLocaleString('es-CL')} aves · ${s!==null?'Semana '+s+' de vida':'Sin fecha de nacimiento'}</div>
+      <div style="font-size:11px;color:#9ca3af;margin-top:2px">Nacimiento: ${l.fechaNac||'no registrada'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── UTILS ───────────────────────────────────────────────────
+function step(id,d){const el=document.getElementById(id);el.value=Math.max(0,(parseInt(el.value)||0)+d);}
+async function post(data){return fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});}
 </script>
 </body>
 </html>
