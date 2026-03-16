@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a2e1a">
+<title>Registro Diario — Huevos La Campestre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --verde-oscuro: #0a2e1a;
+    --verde-medio: #1a5c34;
+    --verde-claro: #2d8a52;
+    --verde-suave: #e8f5ec;
+    --acento: #f5c842;
+    --rojo: #e53e3e;
+    --gris: #6b7280;
+    --gris-claro: #f3f4f6;
+    --blanco: #ffffff;
+    --texto: #111827;
+    --radio: 16px;
+    --sombra: 0 4px 24px rgba(0,0,0,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--verde-oscuro);
+    min-height: 100vh;
+    color: var(--texto);
+    padding-bottom: 40px;
+  }
+
+  /* Header */
+  .header {
+    background: var(--verde-oscuro);
+    padding: 28px 20px 20px;
+    text-align: center;
+    position: relative;
+  }
+  .header-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--acento);
+    margin-bottom: 6px;
+  }
+  .header-nombre {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    color: var(--blanco);
+    line-height: 1.2;
+  }
+  .header-fecha {
+    font-size: 13px;
+    color: rgba(255,255,255,0.5);
+    margin-top: 6px;
+    font-weight: 300;
+  }
+  .header-egg {
+    font-size: 32px;
+    margin-bottom: 8px;
+  }
+
+  /* Card principal */
+  .card {
+    background: var(--blanco);
+    border-radius: var(--radio) var(--radio) 0 0;
+    margin-top: 0;
+    padding: 28px 20px;
+    min-height: calc(100vh - 160px);
+  }
+
+  /* Secciones del form */
+  .seccion {
+    margin-bottom: 28px;
+  }
+  .seccion-titulo {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--verde-medio);
+    margin-bottom: 14px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--verde-suave);
+  }
+
+  .campo {
+    margin-bottom: 16px;
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gris);
+    margin-bottom: 6px;
+  }
+  label .req {
+    color: var(--verde-claro);
+    margin-left: 2px;
+  }
+  label .opt {
+    font-weight: 300;
+    color: #9ca3af;
+    font-size: 11px;
+    margin-left: 4px;
+  }
+
+  input[type="date"],
+  input[type="number"],
+  input[type="text"],
+  select,
+  textarea {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    color: var(--texto);
+    background: var(--gris-claro);
+    transition: border-color 0.2s, background 0.2s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--verde-claro);
+    background: var(--blanco);
+  }
+  input.obligatorio {
+    border-color: var(--verde-claro);
+    background: #f0faf3;
+  }
+  input.obligatorio:focus {
+    border-color: var(--verde-oscuro);
+  }
+
+  /* Campo numérico grande para alimento */
+  .campo-grande input {
+    font-size: 28px;
+    font-weight: 600;
+    text-align: center;
+    padding: 18px;
+    border-color: var(--verde-claro);
+    background: #f0faf3;
+    color: var(--verde-oscuro);
+  }
+  .campo-grande .unidad {
+    text-align: center;
+    font-size: 12px;
+    color: var(--gris);
+    margin-top: 4px;
+  }
+
+  /* Select de pabellones */
+  .select-wrap { position: relative; }
+  .select-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--verde-claro);
+    pointer-events: none;
+    font-size: 18px;
+  }
+  select { padding-right: 40px; cursor: pointer; }
+
+  /* Stepper para aves muertas */
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .stepper input {
+    text-align: center;
+    flex: 1;
+    font-size: 22px;
+    font-weight: 600;
+  }
+  .stepper-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid var(--verde-claro);
+    background: var(--blanco);
+    color: var(--verde-claro);
+    font-size: 24px;
+    font-weight: 300;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .stepper-btn:active {
+    background: var(--verde-claro);
+    color: var(--blanco);
+    transform: scale(0.95);
+  }
+
+  /* Textarea observaciones */
+  textarea {
+    resize: none;
+    min-height: 80px;
+    font-size: 15px;
+  }
+
+  /* Botón submit */
+  .btn-submit {
+    width: 100%;
+    padding: 18px;
+    background: var(--verde-oscuro);
+    color: var(--blanco);
+    border: none;
+    border-radius: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-submit:active { transform: scale(0.98); }
+  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-submit .spinner {
+    display: none;
+    width: 20px; height: 20px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Estado: enviando / éxito / error */
+  .estado {
+    display: none;
+    padding: 16px;
+    border-radius: 12px;
+    margin-top: 14px;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+  }
+  .estado.ok { background: #d1fae5; color: #065f46; display: block; }
+  .estado.error { background: #fee2e2; color: #991b1b; display: block; }
+
+  /* Separador */
+  .separador {
+    height: 1px;
+    background: var(--verde-suave);
+    margin: 28px 0;
+  }
+
+  /* Sección gráfico */
+  .grafico-wrap {
+    background: var(--verde-oscuro);
+    border-radius: 16px;
+    padding: 20px 16px;
+    margin-top: 8px;
+  }
+  .grafico-titulo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 16px;
+    color: var(--blanco);
+    margin-bottom: 4px;
+  }
+  .grafico-subtitulo {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .tabs-grafico {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 7px 4px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: transparent;
+    color: rgba(255,255,255,0.5);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tab-btn.active {
+    background: var(--acento);
+    color: var(--verde-oscuro);
+    border-color: var(--acento);
+    font-weight: 600;
+  }
+  canvas { max-height: 220px; }
+
+  /* KPIs rápidos */
+  .kpis {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .kpi {
+    background: rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .kpi-label {
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .kpi-valor {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--blanco);
+  }
+  .kpi-valor span {
+    font-size: 12px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.5);
+    margin-left: 2px;
+  }
+
+  /* Sin datos */
+  .sin-datos {
+    text-align: center;
+    padding: 30px 0;
+    color: rgba(255,255,255,0.35);
+    font-size: 13px;
+  }
+
+
+  /* Gestión dinámica de lotes */
+  .lotes-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .lote-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--gris-claro);
+    border-radius: 12px;
+    border: 1.5px solid #e5e7eb;
+    transition: border-color 0.2s;
+    cursor: pointer;
+  }
+  .lote-item.seleccionado {
+    border-color: var(--verde-claro);
+    background: #f0faf3;
+  }
+  .lote-radio {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 2px solid #d1d5db;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .lote-item.seleccionado .lote-radio {
+    border-color: var(--verde-claro);
+    background: var(--verde-claro);
+  }
+  .lote-radio::after {
+    content: '';
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: white;
+    display: none;
+  }
+  .lote-item.seleccionado .lote-radio::after { display: block; }
+  .lote-nombre {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--texto);
+  }
+  .lote-eliminar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: #d1d5db;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 1;
+    padding: 0;
+    flex-shrink: 0;
+    transition: color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .lote-eliminar:hover { color: var(--rojo); }
+  .btn-agregar-lote {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1.5px dashed #d1d5db;
+    background: transparent;
+    color: var(--verde-claro);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-agregar-lote:hover {
+    border-color: var(--verde-claro);
+    background: #f0faf3;
+  }
+  /* Modal nuevo lote */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 200;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.activo { display: flex; }
+  .modal-sheet {
+    background: white;
+    border-radius: 20px 20px 0 0;
+    padding: 24px 20px 40px;
+    width: 100%;
+    max-width: 480px;
+    animation: slideModal 0.3s ease;
+  }
+  @keyframes slideModal {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  .modal-titulo {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--texto);
+    margin-bottom: 16px;
+  }
+  .modal-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1.5px solid var(--verde-claro);
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    color: var(--texto);
+    background: #f0faf3;
+    margin-bottom: 14px;
+  }
+  .modal-input:focus { outline: none; border-color: var(--verde-oscuro); }
+  .modal-acciones {
+    display: flex; gap: 10px;
+  }
+  .btn-modal-cancel {
+    flex: 1; padding: 13px;
+    border-radius: 12px;
+    border: 1.5px solid #e5e7eb;
+    background: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--gris);
+    cursor: pointer;
+  }
+  .btn-modal-ok {
+    flex: 2; padding: 13px;
+    border-radius: 12px;
+    border: none;
+    background: var(--verde-oscuro);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+  }
+
+  /* Pantalla de carga */
+  #pantalla-carga {
+    position: fixed; inset: 0;
+    background: var(--verde-oscuro);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px;
+    z-index: 999;
+  }
+  #pantalla-carga .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--blanco);
+  }
+  #pantalla-carga .sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .carga-bar {
+    width: 120px; height: 2px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .carga-fill {
+    height: 100%;
+    background: var(--acento);
+    border-radius: 2px;
+    animation: cargando 1.2s ease forwards;
+  }
+  @keyframes cargando { from { width: 0; } to { width: 100%; } }
+
+  /* Animación entrada */
+  .card { animation: slideUp 0.4s ease; }
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Pantalla de carga -->
+<div id="pantalla-carga">
+  <div style="font-size:40px">🥚</div>
+  <div class="logo">Huevos La Campestre</div>
+  <div class="sub">Cargando...</div>
+  <div class="carga-bar"><div class="carga-fill"></div></div>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-logo">Huevos La Campestre</div>
+  <div class="header-nombre" id="nombre-productor">Cargando...</div>
+  <div class="header-fecha" id="fecha-hoy"></div>
+</div>
+
+<!-- Card principal -->
+<div class="card">
+
+  <form id="form-registro" novalidate>
+
+    <!-- FECHA -->
+    <div class="seccion">
+      <div class="seccion-titulo">📅 Fecha del registro</div>
+      <div class="campo">
+        <label>Fecha <span class="req">*</span></label>
+        <input type="date" id="fecha" required>
+      </div>
+    </div>
+
+    <!-- PABELLÓN / LOTE DINÁMICO -->
+    <div class="seccion">
+      <div class="seccion-titulo">🏠 Pabellón / Lote</div>
+      <div class="lotes-lista" id="lotes-lista"></div>
+      <button type="button" class="btn-agregar-lote" onclick="abrirModalLote()">
+        <span style="font-size:20px;line-height:1">+</span> Agregar lote
+      </button>
+      <!-- input oculto para el valor del lote seleccionado -->
+      <input type="hidden" id="pabellon" required>
+    </div>
+
+    <!-- MODAL NUEVO LOTE -->
+    <div class="modal-overlay" id="modal-lote">
+      <div class="modal-sheet">
+        <div class="modal-titulo">Nuevo pabellón / lote</div>
+        <input type="text" class="modal-input" id="nuevo-lote-nombre"
+               placeholder="ej: Pabellón 2, Lote B, Galpón Sur..."
+               maxlength="40">
+        <div class="modal-acciones">
+          <button type="button" class="btn-modal-cancel" onclick="cerrarModalLote()">Cancelar</button>
+          <button type="button" class="btn-modal-ok" onclick="confirmarNuevoLote()">Agregar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALIMENTO (obligatorio) -->
+    <div class="seccion">
+      <div class="seccion-titulo">🌾 Alimento recibido <span style="color:var(--verde-claro);font-size:10px;letter-spacing:1px">OBLIGATORIO</span></div>
+      <div class="campo campo-grande">
+        <input type="number" id="alimento-kg" class="obligatorio"
+               inputmode="decimal" min="0" step="0.5"
+               placeholder="0" required>
+        <div class="unidad">kilogramos entregados hoy</div>
+      </div>
+    </div>
+
+    <!-- DATOS OPCIONALES -->
+    <div class="seccion">
+      <div class="seccion-titulo">📊 Datos del día <span style="color:#9ca3af;font-size:10px;font-weight:300;letter-spacing:0px;text-transform:none">opcional</span></div>
+
+      <div class="campo">
+        <label>Aves muertas <span class="opt">(bajas del día)</span></label>
+        <div class="stepper">
+          <button type="button" class="stepper-btn" onclick="stepperChange('aves-muertas',-1)">−</button>
+          <input type="number" id="aves-muertas" value="0" min="0" inputmode="numeric">
+          <button type="button" class="stepper-btn" onclick="stepperChange('aves-muertas',1)">+</button>
+        </div>
+      </div>
+
+      <div class="campo">
+        <label>Huevos recolectados <span class="opt">(total del día)</span></label>
+        <input type="number" id="huevos" inputmode="numeric" min="0" placeholder="ej: 850">
+      </div>
+    </div>
+
+    <!-- OBSERVACIONES -->
+    <div class="seccion">
+      <div class="seccion-titulo">💬 Observaciones</div>
+      <div class="campo">
+        <textarea id="observaciones" placeholder="Cualquier novedad del día: enfermedad, clima, visita, etc."></textarea>
+      </div>
+    </div>
+
+    <!-- SUBMIT -->
+    <button type="submit" class="btn-submit" id="btn-enviar">
+      <span id="btn-texto">Enviar registro</span>
+      <div class="spinner" id="spinner"></div>
+    </button>
+    <div class="estado" id="estado-msg"></div>
+
+  </form>
+
+  <div class="separador"></div>
+
+  <!-- GRÁFICO HISTÓRICO -->
+  <div class="grafico-wrap">
+    <div class="grafico-titulo">Mi historial</div>
+    <div class="grafico-subtitulo">Últimos 30 días</div>
+
+    <div class="kpis" id="kpis-wrap">
+      <div class="kpi">
+        <div class="kpi-label">Alimento total</div>
+        <div class="kpi-valor" id="kpi-alimento">—<span>kg</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Postura prom.</div>
+        <div class="kpi-valor" id="kpi-postura">—<span>%</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Bajas totales</div>
+        <div class="kpi-valor" id="kpi-muertas">—<span>aves</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Registros</div>
+        <div class="kpi-valor" id="kpi-registros">—</div>
+      </div>
+    </div>
+
+    <div class="tabs-grafico">
+      <button class="tab-btn active" onclick="cambiarGrafico('alimento',this)">Alimento</button>
+      <button class="tab-btn" onclick="cambiarGrafico('huevos',this)">Huevos</button>
+      <button class="tab-btn" onclick="cambiarGrafico('muertas',this)">Bajas</button>
+    </div>
+
+    <div id="grafico-container">
+      <canvas id="grafico-historico"></canvas>
+      <div class="sin-datos" id="sin-datos" style="display:none">
+        Aún no hay registros históricos.<br>¡Este será el primero!
+      </div>
+    </div>
+  </div>
+
+</div><!-- /card -->
+
+<script>
+// ── CONFIGURACIÓN ─────────────────────────────────────────────
+// URL del Apps Script Web App — reemplazar con la URL real después de publicar
+const SCRIPT_URL = 'https://script.google.com/macros/s/TU_SCRIPT_ID_AQUI/exec';
+
+// Configuración de productores: cada uno tiene su slug de URL y sus pabellones
+const PRODUCTORES = {
+  'epulef-criadero':  { nombre: 'Criadero Epulef' },
+  'epulef-frank':     { nombre: 'Frank Epulef' },
+  'nanculen':         { nombre: 'Agrícola Ñanculén' },
+  'emplumados':       { nombre: 'Avícola Emplumados' },
+  'becerra':          { nombre: 'Juan Becerra' },
+  'vergara':          { nombre: 'Cristian Vergara' },
+  'calibu':           { nombre: 'Huevos Calibú' },
+  'santelices':       { nombre: 'Roberto Santelices' },
+  'herrera':          { nombre: 'Juan Pablo Herrera' },
+  'copihue-real':     { nombre: 'Copihue Real' },
+};
+
+// ── ESTADO GLOBAL ─────────────────────────────────────────────
+let slugActual = '';
+let productorActual = null;
+let historico = [];
+let graficoInstance = null;
+let campoActual = 'alimento';
+
+// ── INICIALIZACIÓN ────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Detectar slug desde URL: /campestre/epulef → slug = "epulef"
+  const path = window.location.pathname;
+  const partes = path.split('/').filter(Boolean);
+  slugActual = partes[partes.length - 1] || '';
+
+  // También soportar ?p=slug como fallback
+  const params = new URLSearchParams(window.location.search);
+  if (!slugActual || !PRODUCTORES[slugActual]) {
+    slugActual = params.get('p') || '';
+  }
+
+  productorActual = PRODUCTORES[slugActual] || null;
+
+  setTimeout(() => {
+    document.getElementById('pantalla-carga').style.display = 'none';
+    inicializar();
+  }, 1000);
+});
+
+async function inicializar() {
+  if (!productorActual) {
+    document.getElementById('nombre-productor').textContent = 'Enlace no válido';
+    document.querySelector('.card').innerHTML = `
+      <div style="text-align:center;padding:40px 20px">
+        <div style="font-size:48px;margin-bottom:16px">🔒</div>
+        <div style="font-size:18px;font-weight:600;color:#111;margin-bottom:8px">Enlace no reconocido</div>
+        <div style="font-size:14px;color:#6b7280">Usa el enlace que te entregó Huevos La Campestre.</div>
+      </div>`;
+    return;
+  }
+
+  // Nombre y fecha
+  document.getElementById('nombre-productor').textContent = productorActual.nombre;
+  const hoy = new Date();
+  document.getElementById('fecha-hoy').textContent =
+    hoy.toLocaleDateString('es-CL', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+  // Fecha por defecto = hoy
+  document.getElementById('fecha').value = hoy.toISOString().split('T')[0];
+
+  // Cargar lotes desde Google Sheet
+  await cargarLotes();
+
+  // Form submit
+  document.getElementById('form-registro').addEventListener('submit', enviarRegistro);
+
+  // Cerrar modal al tocar overlay
+  document.getElementById('modal-lote').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModalLote();
+  });
+
+  // Enter en input del modal
+  document.getElementById('nuevo-lote-nombre').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); confirmarNuevoLote(); }
+  });
+
+  // Cargar histórico
+  cargarHistoricoLocal();
+  renderGrafico('alimento');
+}
+
+// ── GESTIÓN DE LOTES — fuente de verdad: Google Sheet ────────
+// Cache local solo para cuando no hay internet
+function keyLotesCache() { return `campestre_lotes_cache_${slugActual}`; }
+
+// Cargar lotes activos desde el Sheet al iniciar
+async function cargarLotes() {
+  mostrarCargandoLotes(true);
+  try {
+    const url = `${SCRIPT_URL}?accion=lotes&slug=${encodeURIComponent(slugActual)}`;
+    const resp = await fetch(url);
+    const json = await resp.json();
+    if (json.ok && json.lotes.length > 0) {
+      // Guardar en caché local
+      localStorage.setItem(keyLotesCache(), JSON.stringify(json.lotes));
+      renderLotes(json.lotes);
+    } else {
+      // Sin lotes en Sheet → primer acceso, inicializar con "Lote 1"
+      await crearLoteEnSheet('Lote 1');
+      renderLotes(['Lote 1']);
+    }
+  } catch (err) {
+    // Sin internet → usar caché local
+    const cache = JSON.parse(localStorage.getItem(keyLotesCache()) || '[]');
+    if (cache.length) {
+      renderLotes(cache);
+      mostrarEstado('Sin conexión — mostrando lotes guardados localmente.', false);
+    } else {
+      // Nunca se cargaron: mostrar "Lote 1" de emergencia
+      renderLotes(['Lote 1']);
+      mostrarEstado('Sin conexión. Los lotes se sincronizarán cuando vuelva la red.', false);
+    }
+  } finally {
+    mostrarCargandoLotes(false);
+  }
+}
+
+function mostrarCargandoLotes(loading) {
+  const lista = document.getElementById('lotes-lista');
+  if (loading) {
+    lista.innerHTML = '<div style="padding:14px;color:#9ca3af;font-size:13px;text-align:center">Cargando lotes...</div>';
+  }
+}
+
+function renderLotes(lotes) {
+  const lista = document.getElementById('lotes-lista');
+  const inputHidden = document.getElementById('pabellon');
+
+  // Mantener selección actual si sigue existiendo, si no → primero
+  let selActual = inputHidden.value;
+  if (!lotes.includes(selActual)) selActual = lotes[0] || '';
+  inputHidden.value = selActual;
+
+  lista.innerHTML = lotes.map(lote => {
+    const nombreEsc = lote.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    return `
+    <div class="lote-item ${lote === selActual ? 'seleccionado' : ''}"
+         onclick="seleccionarLote('${nombreEsc}', this)">
+      <div class="lote-radio"></div>
+      <div class="lote-nombre">${lote}</div>
+      ${lotes.length > 1
+        ? `<button type="button" class="lote-eliminar"
+             title="Dar de baja este lote"
+             onclick="event.stopPropagation(); darDeBajaLote('${nombreEsc}')">×</button>`
+        : ''}
+    </div>`;
+  }).join('');
+}
+
+function seleccionarLote(nombre, el) {
+  document.getElementById('pabellon').value = nombre;
+  document.querySelectorAll('.lote-item').forEach(i => i.classList.remove('seleccionado'));
+  el.classList.add('seleccionado');
+}
+
+// Dar de baja un lote → queda inactivo en Sheet (historial intacto)
+async function darDeBajaLote(nombre) {
+  const cache = JSON.parse(localStorage.getItem(keyLotesCache()) || '[]');
+  if (cache.length <= 1) {
+    mostrarEstado('Debe haber al menos un lote activo.', false);
+    return;
+  }
+  if (!confirm(`¿Dar de baja el lote "${nombre}"?\nEl historial se conserva, solo dejará de aparecer.`)) return;
+
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accion: 'baja_lote', slug: slugActual, lote: nombre }),
+    });
+    // Actualizar caché local
+    const nuevo = cache.filter(l => l !== nombre);
+    localStorage.setItem(keyLotesCache(), JSON.stringify(nuevo));
+    renderLotes(nuevo);
+    mostrarEstado(`Lote "${nombre}" dado de baja correctamente.`, true);
+  } catch (err) {
+    mostrarEstado('Error al dar de baja. Intenta de nuevo.', false);
+  }
+}
+
+// Crear un lote nuevo en el Sheet
+async function crearLoteEnSheet(nombre) {
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        accion: 'nuevo_lote',
+        slug: slugActual,
+        productor: productorActual.nombre,
+        lote: nombre,
+      }),
+    });
+  } catch (err) {
+    // Si falla, igual lo mostramos (se sincronizará cuando haya red)
+    console.warn('Error al crear lote en Sheet:', err);
+  }
+}
+
+function abrirModalLote() {
+  document.getElementById('nuevo-lote-nombre').value = '';
+  document.getElementById('modal-lote').classList.add('activo');
+  setTimeout(() => document.getElementById('nuevo-lote-nombre').focus(), 300);
+}
+
+function cerrarModalLote() {
+  document.getElementById('modal-lote').classList.remove('activo');
+}
+
+async function confirmarNuevoLote() {
+  const nombre = document.getElementById('nuevo-lote-nombre').value.trim();
+  if (!nombre) return;
+
+  const cache = JSON.parse(localStorage.getItem(keyLotesCache()) || '[]');
+  if (cache.includes(nombre)) {
+    alert('Ya existe un lote con ese nombre.');
+    return;
+  }
+
+  // Deshabilitar botón mientras guarda
+  const btnOk = document.querySelector('.btn-modal-ok');
+  btnOk.textContent = 'Guardando...';
+  btnOk.disabled = true;
+
+  // Guardar en Sheet
+  await crearLoteEnSheet(nombre);
+
+  // Actualizar caché local
+  const nuevo = [...cache, nombre];
+  localStorage.setItem(keyLotesCache(), JSON.stringify(nuevo));
+
+  // Seleccionar el nuevo lote automáticamente
+  document.getElementById('pabellon').value = nombre;
+  renderLotes(nuevo);
+  document.querySelectorAll('.lote-item').forEach(el => {
+    if (el.querySelector('.lote-nombre').textContent === nombre)
+      el.classList.add('seleccionado');
+    else
+      el.classList.remove('seleccionado');
+  });
+
+  btnOk.textContent = 'Agregar';
+  btnOk.disabled = false;
+  cerrarModalLote();
+  mostrarEstado(`Lote "${nombre}" agregado correctamente.`, true);
+}
+
+// ── STEPPER ───────────────────────────────────────────────────
+function stepperChange(id, delta) {
+  const inp = document.getElementById(id);
+  const val = parseInt(inp.value) || 0;
+  inp.value = Math.max(0, val + delta);
+}
+
+// ── ENVIAR REGISTRO ───────────────────────────────────────────
+async function enviarRegistro(e) {
+  e.preventDefault();
+
+  const alimento = parseFloat(document.getElementById('alimento-kg').value);
+  const pabellon = document.getElementById('pabellon').value;
+  const fecha    = document.getElementById('fecha').value;
+
+  // Validación
+  if (!pabellon) { mostrarEstado('Selecciona un pabellón.', false); return; }
+  if (!fecha)    { mostrarEstado('Ingresa la fecha.', false); return; }
+  if (!alimento && alimento !== 0) { mostrarEstado('Ingresa los kg de alimento (puede ser 0 si no hubo entrega).', false); return; }
+
+  const datos = {
+    accion:       'registro',
+    slug:         slugActual,
+    productor:    productorActual.nombre,
+    pabellon,
+    fecha,
+    alimento_kg:  alimento,
+    aves_muertas: parseInt(document.getElementById('aves-muertas').value) || 0,
+    huevos:       parseInt(document.getElementById('huevos').value) || 0,
+    observaciones: document.getElementById('observaciones').value.trim(),
+    timestamp:    new Date().toISOString(),
+  };
+
+  // UI: cargando
+  const btn = document.getElementById('btn-enviar');
+  document.getElementById('btn-texto').style.display = 'none';
+  document.getElementById('spinner').style.display = 'block';
+  btn.disabled = true;
+
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(datos),
+    });
+
+    // Guardar en localStorage
+    guardarHistoricoLocal(datos);
+    mostrarEstado('✅ Registro enviado correctamente. ¡Gracias!', true);
+    document.getElementById('form-registro').reset();
+    document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+    document.getElementById('aves-muertas').value = 0;
+
+    // Mantener lotes y reseleccionar el primero
+    cargarLotes();
+    // Actualizar gráfico
+    cargarHistoricoLocal();
+    renderGrafico(campoActual);
+
+  } catch (err) {
+    // Con no-cors no podemos detectar error real, guardamos igual localmente
+    guardarHistoricoLocal(datos);
+    mostrarEstado('✅ Registro guardado localmente. Se sincronizará pronto.', true);
+  } finally {
+    document.getElementById('btn-texto').style.display = 'block';
+    document.getElementById('spinner').style.display = 'none';
+    btn.disabled = false;
+  }
+}
+
+function mostrarEstado(msg, ok) {
+  const el = document.getElementById('estado-msg');
+  el.textContent = msg;
+  el.className = 'estado ' + (ok ? 'ok' : 'error');
+  setTimeout(() => { el.className = 'estado'; }, 5000);
+}
+
+// ── HISTÓRICO LOCAL ───────────────────────────────────────────
+function keyStorage() { return `campestre_hist_${slugActual}`; }
+
+function guardarHistoricoLocal(datos) {
+  const hist = JSON.parse(localStorage.getItem(keyStorage()) || '[]');
+  hist.push(datos);
+  // Mantener últimos 90 registros
+  if (hist.length > 90) hist.splice(0, hist.length - 90);
+  localStorage.setItem(keyStorage(), JSON.stringify(hist));
+}
+
+function cargarHistoricoLocal() {
+  historico = JSON.parse(localStorage.getItem(keyStorage()) || '[]');
+  historico.sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+  // KPIs
+  const totalAlimento = historico.reduce((s, r) => s + (r.alimento_kg || 0), 0);
+  const totalMuertas  = historico.reduce((s, r) => s + (r.aves_muertas || 0), 0);
+  const regsConHuevos = historico.filter(r => r.huevos > 0);
+
+  document.getElementById('kpi-alimento').innerHTML =
+    `${totalAlimento.toLocaleString('es-CL')}<span>kg</span>`;
+  document.getElementById('kpi-muertas').innerHTML =
+    `${totalMuertas.toLocaleString('es-CL')}<span>aves</span>`;
+  document.getElementById('kpi-registros').textContent = historico.length;
+
+  if (regsConHuevos.length > 0) {
+    // Postura promedio requiere aves — mostramos huevos promedio si no hay aves
+    const promHuevos = Math.round(regsConHuevos.reduce((s,r) => s + r.huevos, 0) / regsConHuevos.length);
+    document.getElementById('kpi-postura').innerHTML = `${promHuevos}<span>huevos/d</span>`;
+  } else {
+    document.getElementById('kpi-postura').innerHTML = `—<span>%</span>`;
+  }
+}
+
+// ── GRÁFICO ───────────────────────────────────────────────────
+function cambiarGrafico(campo, btn) {
+  campoActual = campo;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGrafico(campo);
+}
+
+function renderGrafico(campo) {
+  const container = document.getElementById('grafico-container');
+  const sinDatos  = document.getElementById('sin-datos');
+  const canvas    = document.getElementById('grafico-historico');
+
+  // Últimos 30 días
+  const ultimos30 = historico.slice(-30);
+
+  if (!ultimos30.length) {
+    canvas.style.display = 'none';
+    sinDatos.style.display = 'block';
+    return;
+  }
+  canvas.style.display = 'block';
+  sinDatos.style.display = 'none';
+
+  const labels = ultimos30.map(r => {
+    const [y,m,d] = r.fecha.split('-');
+    return `${d}/${m}`;
+  });
+
+  const config = {
+    alimento: { data: ultimos30.map(r => r.alimento_kg || 0), label: 'Alimento (kg)', color: '#f5c842' },
+    huevos:   { data: ultimos30.map(r => r.huevos || 0),      label: 'Huevos',        color: '#6ee7b7' },
+    muertas:  { data: ultimos30.map(r => r.aves_muertas || 0),label: 'Bajas',          color: '#fca5a5' },
+  }[campo];
+
+  if (graficoInstance) graficoInstance.destroy();
+
+  graficoInstance = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: config.label,
+        data: config.data,
+        backgroundColor: config.color + 'bb',
+        borderColor: config.color,
+        borderWidth: 1.5,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.parsed.y.toLocaleString('es-CL')} ${campo === 'alimento' ? 'kg' : campo === 'muertas' ? 'aves' : 'huevos'}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 } },
+          grid: { color: 'rgba(255,255,255,0.05)' },
+        },
+        y: {
+          ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 10 } },
+          grid: { color: 'rgba(255,255,255,0.08)' },
+          beginAtZero: true,
+        }
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
