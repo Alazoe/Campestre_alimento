@@ -120,6 +120,14 @@ canvas{max-height:200px}
 .macc{display:flex;gap:10px}
 .bmc{flex:1;padding:13px;border-radius:12px;border:1.5px solid #e5e7eb;background:white;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--gris);cursor:pointer}
 .bmok{flex:2;padding:13px;border-radius:12px;border:none;background:var(--vd);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:white;cursor:pointer}
+
+/* BANNER PANTALLA INICIO */
+.banner-app{background:var(--vd);margin:10px 16px 0;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+.banner-icon{font-size:22px;flex-shrink:0}
+.banner-txt{flex:1}
+.banner-tit{font-size:12px;font-weight:600;color:var(--ac);margin-bottom:2px}
+.banner-sub{font-size:11px;color:rgba(255,255,255,.55);line-height:1.5}
+.banner-close{width:26px;height:26px;border-radius:50%;border:none;background:rgba(255,255,255,.1);color:rgba(255,255,255,.6);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent}
 .sep{height:1px;background:var(--vs);margin:20px 0}
 </style>
 </head>
@@ -142,6 +150,15 @@ canvas{max-height:200px}
   <button class="tnb active" onclick="setTab('registro',this)">📋 Registro</button>
   <button class="tnb" onclick="setTab('historial',this)">📊 Historial</button>
   <button class="tnb" onclick="setTab('config',this)">⚙️ Config</button>
+</div>
+
+<div class="banner-app" id="banner-app" style="display:none">
+  <div class="banner-icon">&#x1F4F2;</div>
+  <div class="banner-txt">
+    <div class="banner-tit">Agregar a pantalla de inicio</div>
+    <div class="banner-sub" id="banner-sub">Usa el men&#250; de tu navegador para instalar esta app.</div>
+  </div>
+  <button class="banner-close" onclick="cerrarBanner()">&#xD7;</button>
 </div>
 
 <div class="card">
@@ -338,6 +355,7 @@ async function init(){
   document.getElementById('form-reg').addEventListener('submit',enviar);
   document.getElementById('modal-lote').addEventListener('click',e=>{if(e.target===e.currentTarget)cerrarModal('modal-lote');});
   document.getElementById('modal-editar').addEventListener('click',e=>{if(e.target===e.currentTarget)cerrarModal('modal-editar');});
+  mostrarBannerSiCorresponde();
 }
 
 // ─── TABS ─────────────────────────────────────────────────────
@@ -713,6 +731,26 @@ async function confirmarEdicion(){
   btn.textContent='Guardar cambios';btn.disabled=false;
   cerrarModal('modal-editar');
   mostrarEstado(`Lote "${nombreOrig}" actualizado correctamente.`,true);
+}
+
+// --- BANNER PANTALLA DE INICIO ---
+function mostrarBannerSiCorresponde(){
+  if(localStorage.getItem('bdismissed_'+slug))return;
+  if(window.navigator.standalone||window.matchMedia('(display-mode: standalone)').matches)return;
+  var ua=navigator.userAgent.toLowerCase();
+  var ios=/iphone|ipad|ipod/.test(ua);
+  var android=/android/.test(ua);
+  var safari=/safari/.test(ua)&&!/chrome/.test(ua);
+  var chrome=/chrome/.test(ua)&&!/edg/.test(ua);
+  var el=document.getElementById('banner-app');
+  var sub=document.getElementById('banner-sub');
+  if(ios&&safari){sub.textContent='iPhone: toca el botón compartir (cuadrado con flecha) → "Agregar a pantalla de inicio".';el.style.display='flex';}
+  else if(android&&chrome){sub.textContent='Android: toca el menú (tres puntos) → "Agregar a pantalla de inicio".';el.style.display='flex';}
+  else if(ios||android){sub.textContent='Abre el menú de tu navegador → "Agregar a pantalla de inicio".';el.style.display='flex';}
+}
+function cerrarBanner(){
+  document.getElementById('banner-app').style.display='none';
+  localStorage.setItem('bdismissed_'+slug,'1');
 }
 
 // ─── UTILS ───────────────────────────────────────────────────
