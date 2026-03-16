@@ -1,403 +1,352 @@
 // ============================================================
-// HUEVOS LA CAMPESTRE — Backend Apps Script
-// Recibe registros desde la app web y los guarda en el Sheet
+// HUEVOS LA CAMPESTRE — Backend Apps Script v3
 // ============================================================
-// INSTRUCCIONES:
-// 1. Abre el Google Sheet maestro
-// 2. Extensiones → Apps Script → pega este código
-// 3. Implementar → Nueva implementación → App web
-//    - Ejecutar como: Yo (tu cuenta)
-//    - Quién tiene acceso: Cualquier persona
-// 4. Copia la URL y pégala en index.html donde dice SCRIPT_URL
-// ============================================================
-
-const SHEET_ID      = '1mL9aBs-4UPpQW-iJBxBc3Wbh2Xg88svi5uUK2qeBpAI';
+const SHEET_ID       = '1mL9aBs-4UPpQW-iJBxBc3Wbh2Xg88svi5uUK2qeBpAI';
 const SHEET_LOTES    = 'LOTES';
 const SHEET_ENTREGAS = 'ENTREGAS_ALIMENTO';
-const SHEET_MAESTRO = 'REGISTROS';
-const SHEET_DASH    = 'DASHBOARD';
-const SHEET_CONFIG  = 'CONFIGURACIÓN';
+const SHEET_REGISTROS= 'REGISTROS';
+const SHEET_DASH     = 'DASHBOARD';
+const KG_SACO        = 25;
 
-// ── RECIBIR POST desde la app web ────────────────────────────
+// ── doPost ────────────────────────────────────────────────────
 function doPost(e) {
   try {
-    const datos = JSON.parse(e.postData.contents);
-
-    if (datos.accion === 'registro') {
-      guardarRegistro(datos);
-    } else if (datos.accion === 'nuevo_lote') {
-      agregarLote(datos.slug, datos.productor, datos.lote);
-    } else if (datos.accion === 'baja_lote') {
-      darDeBajaLote(datos.slug, datos.lote);
-    } else if (datos.accion === 'entrega') {
-      guardarEntregaAlimento(datos);
-    }
-
-    return ContentService
-      .createTextOutput(JSON.stringify({ ok: true }))
-      .setMimeType(ContentService.MimeType.JSON);
-
-  } catch (err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ ok: false, error: err.message }))
-      .setMimeType(ContentService.MimeType.JSON);
+    const d = JSON.parse(e.postData.contents);
+    if      (d.accion === 'registro')   guardarRegistro(d);
+    else if (d.accion === 'nuevo_lote') agregarLote(d);
+    else if (d.accion === 'baja_lote')  darDeBajaLote(d.slug, d.lote);
+    else if (d.accion === 'entrega')    guardarEntrega(d);
+    else if (d.accion === 'set_dieta')  guardarDietaProductor(d.slug, d.dieta);
+    return _json({ ok: true });
+  } catch(err) {
+    return _json({ ok: false, error: err.message });
   }
 }
 
-// ── RECIBIR GET ───────────────────────────────────────────────
+// ── doGet ─────────────────────────────────────────────────────
 function doGet(e) {
-  const accion   = e.parameter.accion || 'historico';
-  const slug     = e.parameter.slug || '';
-  const pabellon = e.parameter.pabellon || '';
-
-  if (!slug) {
-    return _json({ ok: false, error: 'Sin slug' });
-  }
+  const accion = e.parameter.accion || '';
+  const slug   = e.parameter.slug   || '';
+  if (!slug) return _json({ ok: false, error: 'Sin slug' });
 
   if (accion === 'lotes') {
-    const lotes = obtenerLotesActivos(slug);
-    return _json({ ok: true, lotes });
+    // Devuelve lotes + stock del PRODUCTOR (no por lote) + dieta guardada
+    const lotes      = obtenerLotesActivos(slug);
+    const stockProd  = obtenerStockProductor(slug);
+    const dieta      = obtenerDietaProductor(slug);
+    return _json({ ok: true, lotes, stockKg: stockProd, dieta });
   }
-
-  const datos = obtenerHistorico(slug, pabellon);
-  return _json({ ok: true, datos });
+  if (accion === 'dashboard') {
+    return _json({ ok: true, data: buildDashboardData() });
+  }
+  return _json({ ok: false, error: 'Accion no reconocida' });
 }
 
 function _json(obj) {
-  return ContentService
-    .createTextOutput(JSON.stringify(obj))
+  return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// ── GUARDAR REGISTRO EN SHEET ─────────────────────────────────
-function guardarRegistro(datos) {
+// ── REGISTROS DIARIOS ─────────────────────────────────────────
+function guardarRegistro(d) {
   const ss = SpreadsheetApp.openById(SHEET_ID);
-  let h = ss.getSheetByName(SHEET_MAESTRO);
-
-  // Crear hoja si no existe
+  let h = ss.getSheetByName(SHEET_REGISTROS);
   if (!h) {
-    h = ss.insertSheet(SHEET_MAESTRO);
-    const hdrs = [
-      'Timestamp', 'Fecha', 'Slug', 'Productor', 'Pabellón/Lote',
-      'Alimento (kg)', 'Aves muertas', 'Huevos', 'Observaciones'
-    ];
-    h.getRange(1, 1, 1, hdrs.length).setValues([hdrs])
-      .setBackground('#0a2e1a')
-      .setFontColor('#ffffff')
-      .setFontWeight('bold');
+    h = ss.insertSheet(SHEET_REGISTROS);
+    h.getRange(1,1,1,12).setValues([[
+      'Timestamp','Fecha','Slug','Productor','Pabellón',
+      'Dieta','Total kg','Aves muertas','Huevos','Aves totales','% Postura','Observaciones'
+    ]]).setBackground('#0a2e1a').setFontColor('#fff').setFontWeight('bold');
     h.setFrozenRows(1);
   }
+  const postura = (d.aves > 0 && d.huevos > 0)
+    ? Math.round(d.huevos / d.aves * 10000) / 100 : '';
 
-  // Agregar fila
-  const fila = [
-    new Date(datos.timestamp),
-    new Date(datos.fecha + 'T12:00:00'),
-    datos.slug,
-    datos.productor,
-    datos.pabellon,
-    parseFloat(datos.alimento_kg) || 0,
-    parseInt(datos.aves_muertas)  || 0,
-    parseInt(datos.huevos)        || 0,
-    datos.observaciones || '',
-  ];
+  h.appendRow([
+    new Date(d.timestamp),
+    new Date(d.fecha + 'T12:00:00'),
+    d.slug, d.productor, d.pabellon,
+    d.dieta || '',
+    parseFloat(d.total_kg) || 0,
+    parseInt(d.muertas) || 0,
+    parseInt(d.huevos)  || 0,
+    parseInt(d.aves)    || 0,
+    postura,
+    d.obs || ''
+  ]);
+  const uf = h.getLastRow();
+  h.getRange(uf,1).setNumberFormat('dd/mm/yyyy HH:mm');
+  h.getRange(uf,2).setNumberFormat('dd/mm/yyyy');
+  if (uf % 2 === 0) h.getRange(uf,1,1,12).setBackground('#f0faf3');
 
-  h.appendRow(fila);
-
-  // Formato fechas
-  const ultima = h.getLastRow();
-  h.getRange(ultima, 1).setNumberFormat('dd/mm/yyyy HH:mm');
-  h.getRange(ultima, 2).setNumberFormat('dd/mm/yyyy');
-
-  // Colores alternos
-  if (ultima % 2 === 0) h.getRange(ultima, 1, 1, 9).setBackground('#f0faf3');
-
-  // Actualizar dashboard automáticamente
+  // Descontar del stock del productor
+  descontarStockProductor(d.slug, parseFloat(d.total_kg)||0);
   actualizarDashboard();
 }
 
-// ── OBTENER HISTÓRICO POR SLUG ────────────────────────────────
-function obtenerHistorico(slug, pabellon) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const h  = ss.getSheetByName(SHEET_MAESTRO);
-  if (!h || h.getLastRow() < 2) return [];
+// ── STOCK POR PRODUCTOR (no por lote) ────────────────────────
+// Col 7 de LOTES = Stock kg ACUMULADO DEL PRODUCTOR
+// Lo guardamos en una fila especial con lote = '__STOCK__'
 
-  const datos = h.getRange(2, 1, h.getLastRow() - 1, 9).getValues();
-  return datos
-    .filter(r => r[2] === slug && (!pabellon || r[4] === pabellon))
-    .map(r => ({
-      timestamp:    r[0] ? Utilities.formatDate(r[0], Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm') : '',
-      fecha:        r[1] ? Utilities.formatDate(r[1], Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
-      pabellon:     r[4],
-      alimento_kg:  r[5],
-      aves_muertas: r[6],
-      huevos:       r[7],
-      observaciones:r[8],
-    }))
-    .slice(-90); // Últimos 90 registros
+function _getHojaStock(ss) {
+  // Reutilizamos la hoja ENTREGAS para llevar el stock neto por productor
+  let h = ss.getSheetByName('STOCK_PRODUCTORES');
+  if (!h) {
+    h = ss.insertSheet('STOCK_PRODUCTORES');
+    h.getRange(1,1,1,4).setValues([['Slug','Productor','Stock kg','Última actualización']])
+      .setBackground('#0a2e1a').setFontColor('#fff').setFontWeight('bold');
+    h.setFrozenRows(1);
+    h.setColumnWidth(1,130); h.setColumnWidth(2,180);
+    h.setColumnWidth(3,110); h.setColumnWidth(4,150);
+  }
+  return h;
 }
 
-// ── GESTIÓN DE LOTES ──────────────────────────────────────────
+function obtenerStockProductor(slug) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const h  = _getHojaStock(ss);
+  if (h.getLastRow() < 2) return 0;
+  const datos = h.getRange(2,1,h.getLastRow()-1,3).getValues();
+  const fila  = datos.find(r => r[0] === slug);
+  return fila ? parseFloat(fila[2]) || 0 : 0;
+}
 
+function sumarStockProductor(slug, productor, kg) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const h  = _getHojaStock(ss);
+  if (h.getLastRow() >= 2) {
+    const datos = h.getRange(2,1,h.getLastRow()-1,3).getValues();
+    const idx   = datos.findIndex(r => r[0] === slug);
+    if (idx >= 0) {
+      const actual = parseFloat(datos[idx][2]) || 0;
+      h.getRange(idx+2, 3).setValue(actual + kg);
+      h.getRange(idx+2, 4).setValue(new Date()).setNumberFormat('dd/mm/yyyy HH:mm');
+      return;
+    }
+  }
+  h.appendRow([slug, productor, kg, new Date()]);
+  h.getRange(h.getLastRow(),4).setNumberFormat('dd/mm/yyyy HH:mm');
+}
+
+function descontarStockProductor(slug, kg) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const h  = _getHojaStock(ss);
+  if (h.getLastRow() < 2) return;
+  const datos = h.getRange(2,1,h.getLastRow()-1,3).getValues();
+  const idx   = datos.findIndex(r => r[0] === slug);
+  if (idx >= 0) {
+    const actual = parseFloat(datos[idx][2]) || 0;
+    h.getRange(idx+2, 3).setValue(Math.max(0, actual - kg));
+    h.getRange(idx+2, 4).setValue(new Date()).setNumberFormat('dd/mm/yyyy HH:mm');
+  }
+}
+
+// ── DIETA POR PRODUCTOR ───────────────────────────────────────
+function guardarDietaProductor(slug, dieta) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const h  = _getHojaStock(ss);
+  if (h.getLastRow() < 2) return;
+  const datos = h.getRange(2,1,h.getLastRow()-1,5).getValues();
+  const idx   = datos.findIndex(r => r[0] === slug);
+  // Aseguramos que col 5 exista para dieta
+  if (idx >= 0) {
+    h.getRange(idx+2, 5).setValue(dieta);
+  }
+}
+
+function obtenerDietaProductor(slug) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const h  = _getHojaStock(ss);
+  if (h.getLastRow() < 2) return null;
+  // Verificar si tiene columna 5
+  const lastCol = h.getLastColumn();
+  if (lastCol < 5) return null;
+  const datos = h.getRange(2,1,h.getLastRow()-1,5).getValues();
+  const fila  = datos.find(r => r[0] === slug);
+  return fila ? (fila[4] || null) : null;
+}
+
+// ── ENTREGAS DE ALIMENTO (Andrés) ─────────────────────────────
+function guardarEntrega(d) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let h = ss.getSheetByName(SHEET_ENTREGAS);
+  if (!h) {
+    h = ss.insertSheet(SHEET_ENTREGAS);
+    h.getRange(1,1,1,10).setValues([[
+      'Timestamp','Fecha','Slug','Productor',
+      'Inicial(s)','Recría(s)','Pre-postura(s)',
+      'Ponedora1(s)','Ponedora2(s)','Otro(s)',
+      'Total sacos','Total kg','Observaciones'
+    ]]);
+    // Fix: 13 cols
+    h.getRange(1,1,1,13).setBackground('#1a1a2e').setFontColor('#fff').setFontWeight('bold');
+    h.setFrozenRows(1);
+  }
+  const s = d.sacos || {};
+  h.appendRow([
+    new Date(d.timestamp),
+    new Date(d.fecha + 'T12:00:00'),
+    d.slug, d.productor,
+    s['Inicial']||0, s['Recría']||0, s['Pre-postura']||0,
+    s['Ponedora 1']||0, s['Ponedora 2']||0, s['Otro']||0,
+    d.totalSacos||0, d.totalKg||0, d.obs||''
+  ]);
+  const uf = h.getLastRow();
+  h.getRange(uf,1).setNumberFormat('dd/mm/yyyy HH:mm');
+  h.getRange(uf,2).setNumberFormat('dd/mm/yyyy');
+  if (uf % 2 === 0) h.getRange(uf,1,1,13).setBackground('#f0faf3');
+
+  // Sumar al stock del productor
+  sumarStockProductor(d.slug, d.productor, parseFloat(d.totalKg)||0);
+  actualizarDashboard();
+}
+
+// ── LOTES ─────────────────────────────────────────────────────
 function _getHojaLotes(ss) {
   let h = ss.getSheetByName(SHEET_LOTES);
   if (!h) {
     h = ss.insertSheet(SHEET_LOTES);
-    const hdrs = ['Slug', 'Productor', 'Lote', 'Estado', 'Fecha alta', 'Fecha baja', 'Stock kg', 'Aves', 'Fecha Nac.'];
-    h.getRange(1, 1, 1, hdrs.length).setValues([hdrs])
-      .setBackground('#0a2e1a').setFontColor('#ffffff').setFontWeight('bold');
+    h.getRange(1,1,1,9).setValues([[
+      'Slug','Productor','Lote','Estado',
+      'Fecha alta','Fecha baja','Aves','Fecha Nac.','Dieta'
+    ]]).setBackground('#0a2e1a').setFontColor('#fff').setFontWeight('bold');
     h.setFrozenRows(1);
-    h.setColumnWidth(1, 130);
-    h.setColumnWidth(2, 160);
-    h.setColumnWidth(3, 140);
-    h.setColumnWidth(4, 80);
-    h.setColumnWidth(5, 120);
-    h.setColumnWidth(6, 120);
-    h.setColumnWidth(7, 100);
-    h.setColumnWidth(8, 80);
-    h.setColumnWidth(9, 110);
+    [130,160,140,80,110,110,80,110,120].forEach((w,i)=>h.setColumnWidth(i+1,w));
   }
   return h;
 }
 
 function obtenerLotesActivos(slug) {
   const ss = SpreadsheetApp.openById(SHEET_ID);
-  const h = _getHojaLotes(ss);
+  const h  = _getHojaLotes(ss);
   if (h.getLastRow() < 2) return [];
-
-  const datos = h.getRange(2, 1, h.getLastRow() - 1, 8).getValues();
+  const datos = h.getRange(2,1,h.getLastRow()-1,9).getValues();
   return datos
-    .filter(r => r[0] === slug && String(r[3]).toUpperCase() === 'ACTIVO')
+    .filter(r => r[0]===slug && String(r[3]).toUpperCase()==='ACTIVO')
     .map(r => ({
-      nombre:    String(r[2]),
-      aves:      parseInt(r[7]) || 0,
-      fechaNac:  r[8] ? Utilities.formatDate(new Date(r[8]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : null,
-      stockKg:   parseFloat(r[6]) || 0,
+      nombre:   String(r[2]),
+      aves:     parseInt(r[6]) || 0,
+      fechaNac: r[7] ? Utilities.formatDate(new Date(r[7]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : null,
     }));
 }
 
-function agregarLote(slug, productor, nombreLote) {
+function agregarLote(d) {
   const ss = SpreadsheetApp.openById(SHEET_ID);
-  const h = _getHojaLotes(ss);
-
-  // Verificar que no exista ya activo
+  const h  = _getHojaLotes(ss);
   if (h.getLastRow() >= 2) {
-    const datos = h.getRange(2, 1, h.getLastRow() - 1, 4).getValues();
-    const existe = datos.some(r =>
-      r[0] === slug && r[2] === nombreLote && String(r[3]).toUpperCase() === 'ACTIVO'
-    );
-    if (existe) return; // ya existe, no duplicar
+    const datos = h.getRange(2,1,h.getLastRow()-1,4).getValues();
+    if (datos.some(r => r[0]===d.slug && r[2]===d.lote && String(r[3]).toUpperCase()==='ACTIVO')) return;
   }
-
-  const avesNum = parseInt(datos.aves) || 0;
-  const fechaNacVal = datos.fechaNac ? new Date(datos.fechaNac + 'T12:00:00') : '';
-  const fila = [slug, productor, nombreLote, 'ACTIVO', new Date(), '', 0, avesNum, fechaNacVal];
-  h.appendRow(fila);
-  h.getRange(h.getLastRow(), 5).setNumberFormat('dd/mm/yyyy');
-
-  // Color alternado
-  const n = h.getLastRow();
-  if (n % 2 === 0) h.getRange(n, 1, 1, 6).setBackground('#f0faf3');
+  const fn = d.fechaNac ? new Date(d.fechaNac + 'T12:00:00') : '';
+  h.appendRow([d.slug, d.productor, d.lote, 'ACTIVO', new Date(), '', parseInt(d.aves)||0, fn, '']);
+  const uf = h.getLastRow();
+  h.getRange(uf,5).setNumberFormat('dd/mm/yyyy');
+  if (fn) h.getRange(uf,8).setNumberFormat('dd/mm/yyyy');
+  if (uf % 2 === 0) h.getRange(uf,1,1,9).setBackground('#f0faf3');
 }
 
 function darDeBajaLote(slug, nombreLote) {
   const ss = SpreadsheetApp.openById(SHEET_ID);
-  const h = _getHojaLotes(ss);
+  const h  = _getHojaLotes(ss);
   if (h.getLastRow() < 2) return;
-
-  const datos = h.getRange(2, 1, h.getLastRow() - 1, 4).getValues();
-  datos.forEach((r, i) => {
-    if (r[0] === slug && r[2] === nombreLote && String(r[3]).toUpperCase() === 'ACTIVO') {
-      const fila = i + 2;
-      h.getRange(fila, 4).setValue('INACTIVO');
-      h.getRange(fila, 6).setValue(new Date()).setNumberFormat('dd/mm/yyyy');
-      h.getRange(fila, 1, 1, 6).setBackground('#fee2e2'); // rojo claro = baja
+  const datos = h.getRange(2,1,h.getLastRow()-1,4).getValues();
+  datos.forEach((r,i) => {
+    if (r[0]===slug && r[2]===nombreLote && String(r[3]).toUpperCase()==='ACTIVO') {
+      h.getRange(i+2,4).setValue('INACTIVO');
+      h.getRange(i+2,6).setValue(new Date()).setNumberFormat('dd/mm/yyyy');
+      h.getRange(i+2,1,1,9).setBackground('#fee2e2');
     }
   });
 }
 
-// ── DASHBOARD AUTOMÁTICO ──────────────────────────────────────
+// ── DASHBOARD ─────────────────────────────────────────────────
+function buildDashboardData() {
+  const ss    = SpreadsheetApp.openById(SHEET_ID);
+  const hStock= _getHojaStock(ss);
+  const hLotes= _getHojaLotes(ss);
+  const hRegs = ss.getSheetByName(SHEET_REGISTROS);
+  const result= [];
+
+  if (hStock.getLastRow() < 2) return result;
+  const stocks = hStock.getRange(2,1,hStock.getLastRow()-1,5).getValues();
+
+  stocks.forEach(sr => {
+    const slug     = sr[0];
+    const productor= sr[1];
+    const stockKg  = parseFloat(sr[2]) || 0;
+    const dieta    = sr[4] || '—';
+
+    // Lotes activos
+    const lotesData = hLotes.getLastRow()>=2
+      ? hLotes.getRange(2,1,hLotes.getLastRow()-1,7).getValues()
+          .filter(r=>r[0]===slug && String(r[3]).toUpperCase()==='ACTIVO')
+      : [];
+    const totalAves = lotesData.reduce((s,r)=>s+(parseInt(r[6])||0),0);
+
+    // Último registro
+    let ultimaFecha = '—', diasSinReg = '—';
+    if (hRegs && hRegs.getLastRow()>=2) {
+      const regs = hRegs.getRange(2,1,hRegs.getLastRow()-1,12).getValues()
+        .filter(r=>r[2]===slug).sort((a,b)=>b[1]-a[1]);
+      if (regs.length) {
+        ultimaFecha = Utilities.formatDate(new Date(regs[0][1]), Session.getScriptTimeZone(), 'dd/MM/yyyy');
+        diasSinReg  = Math.floor((Date.now()-new Date(regs[0][1]))/(86400000));
+      }
+    }
+
+    // Días de stock estimados
+    const consumoDia = totalAves * 0.115;
+    const diasStock  = consumoDia>0 ? Math.round(stockKg/consumoDia) : null;
+
+    result.push({ slug, productor, stockKg, totalAves, diasStock, dieta, ultimaFecha, diasSinReg, lotes: lotesData.length });
+  });
+
+  return result;
+}
+
 function actualizarDashboard() {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const ss  = SpreadsheetApp.openById(SHEET_ID);
   let hDash = ss.getSheetByName(SHEET_DASH);
   if (!hDash) hDash = ss.insertSheet(SHEET_DASH, 0);
-  hDash.clearContents();
-  hDash.clearFormats();
+  hDash.clearContents(); hDash.clearFormats();
 
-  // Encabezado
-  hDash.getRange('A1:J1').merge()
-    .setValue('📊  DASHBOARD — HUEVOS LA CAMPESTRE')
-    .setBackground('#0a2e1a')
-    .setFontColor('#ffffff')
-    .setFontWeight('bold')
-    .setFontSize(14)
-    .setVerticalAlignment('middle');
-  hDash.setRowHeight(1, 42);
+  hDash.getRange('A1:J1').merge().setValue('📊  DASHBOARD — HUEVOS LA CAMPESTRE')
+    .setBackground('#0a2e1a').setFontColor('#fff').setFontWeight('bold').setFontSize(14).setVerticalAlignment('middle');
+  hDash.setRowHeight(1,42);
+  hDash.getRange('A2').setValue('Actualizado: '+Utilities.formatDate(new Date(),Session.getScriptTimeZone(),'dd/MM/yyyy HH:mm'))
+    .setFontStyle('italic').setFontColor('#888').setFontSize(10);
 
-  hDash.getRange('A2').setValue(
-    'Actualizado: ' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm')
-  ).setFontStyle('italic').setFontColor('#888888').setFontSize(10);
+  hDash.getRange('A4:J4').setValues([[
+    'Productor','Lotes','Aves totales','Stock kg','Días stock',
+    'Dieta actual','Última act.','Días sin reg.','Alerta stock','Alerta registro'
+  ]]).setBackground('#1a5c34').setFontColor('#fff').setFontWeight('bold')
+    .setWrap(true).setVerticalAlignment('middle').setHorizontalAlignment('center');
+  hDash.setRowHeight(4,45);
 
-  // Encabezados tabla
-  const hdrs = [
-    'Productor', 'Pabellón', 'Último\nregistro',
-    'Alimento\núlt. entrega (kg)', 'Alimento\ntotal (kg)',
-    'Muertas\núlt. 7 días', 'Huevos\nprom/día',
-    'Días desde\núltimo reg.', 'Alertas', 'Registros\ntotales'
-  ];
-  const rHdr = hDash.getRange('A4:J4');
-  rHdr.setValues([hdrs])
-    .setBackground('#1a5c34')
-    .setFontColor('#ffffff')
-    .setFontWeight('bold')
-    .setWrap(true)
-    .setVerticalAlignment('middle')
-    .setHorizontalAlignment('center');
-  hDash.setRowHeight(4, 48);
-
-  // Leer todos los registros
-  const hReg = ss.getSheetByName(SHEET_MAESTRO);
-  if (!hReg || hReg.getLastRow() < 2) {
-    hDash.getRange('A5').setValue('Sin registros aún.');
-    return;
-  }
-
-  const todos = hReg.getRange(2, 1, hReg.getLastRow() - 1, 9).getValues();
-
-  // Agrupar por productor+pabellón
-  const grupos = {};
-  todos.forEach(r => {
-    const key = r[3] + '||' + r[4]; // productor || pabellón
-    if (!grupos[key]) grupos[key] = {
-      productor: r[3], pabellon: r[4], registros: []
-    };
-    grupos[key].registros.push(r);
+  const data = buildDashboardData();
+  data.forEach((row, i) => {
+    const fila = i + 5;
+    const alertaStock = row.diasStock===null?'Sin aves':row.diasStock<=5?'🔴 URGENTE':row.diasStock<=12?'🟡 ATENCIÓN':'🟢 OK';
+    const alertaReg   = row.diasSinReg==='—'?'Sin registros':row.diasSinReg>=3?'🔴 Sin registrar':row.diasSinReg>=2?'🟡 Hace 2 días':'🟢 Al día';
+    hDash.getRange(fila,1,1,10).setValues([[
+      row.productor, row.lotes, row.totalAves,
+      Math.round(row.stockKg).toLocaleString(), row.diasStock!==null?row.diasStock+'d':'—',
+      row.dieta, row.ultimaFecha, row.diasSinReg==='—'?'—':row.diasSinReg+' días',
+      alertaStock, alertaReg
+    ]]);
+    hDash.getRange(fila,1,1,10).setBackground(i%2===0?'#fff':'#f0faf3');
+    const cStock = row.diasStock===null?'#f3f4f6':row.diasStock<=5?'#fee2e2':row.diasStock<=12?'#fef3c7':'#d1fae5';
+    const cReg   = row.diasSinReg==='—'?'#f3f4f6':row.diasSinReg>=3?'#fee2e2':row.diasSinReg>=2?'#fef3c7':'#d1fae5';
+    hDash.getRange(fila,9).setBackground(cStock);
+    hDash.getRange(fila,10).setBackground(cReg);
   });
 
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-
-  let fila = 5;
-  let idx = 0;
-
-  // Ordenar por nombre productor
-  const keys = Object.keys(grupos).sort();
-
-  keys.forEach(key => {
-    const g = grupos[key];
-    const regs = g.registros.sort((a, b) => a[1] - b[1]);
-    const ultimo = regs[regs.length - 1];
-
-    // Días desde último registro
-    const fechaUltimo = new Date(ultimo[1]);
-    fechaUltimo.setHours(0,0,0,0);
-    const diasDesde = Math.floor((hoy - fechaUltimo) / 86400000);
-
-    // Alimento total y último
-    const alimentoTotal = regs.reduce((s, r) => s + (parseFloat(r[5]) || 0), 0);
-    const alimentoUltimo = parseFloat(ultimo[5]) || 0;
-
-    // Muertas últimos 7 días
-    const hace7 = new Date(hoy); hace7.setDate(hace7.getDate() - 7);
-    const muertas7 = regs
-      .filter(r => new Date(r[1]) >= hace7)
-      .reduce((s, r) => s + (parseInt(r[6]) || 0), 0);
-
-    // Huevos promedio
-    const regsConHuevos = regs.filter(r => parseInt(r[7]) > 0);
-    const huevosProm = regsConHuevos.length > 0
-      ? Math.round(regsConHuevos.reduce((s, r) => s + parseInt(r[7]), 0) / regsConHuevos.length)
-      : 0;
-
-    // Alerta
-    let alerta = '🟢 OK';
-    if (diasDesde >= 3)  alerta = '🔴 Sin registrar';
-    else if (diasDesde >= 2) alerta = '🟡 Hace 2 días';
-
-    const vals = [
-      g.productor,
-      g.pabellon,
-      Utilities.formatDate(new Date(ultimo[1]), Session.getScriptTimeZone(), 'dd/MM/yyyy'),
-      alimentoUltimo,
-      Math.round(alimentoTotal),
-      muertas7,
-      huevosProm || '—',
-      diasDesde === 0 ? 'Hoy' : diasDesde === 1 ? 'Ayer' : diasDesde + ' días',
-      alerta,
-      regs.length,
-    ];
-
-    hDash.getRange(fila, 1, 1, 10).setValues([vals]);
-    hDash.getRange(fila, 1, 1, 10).setBackground(idx % 2 === 0 ? '#ffffff' : '#f0faf3');
-
-    // Color celda alerta
-    const colorAlerta = diasDesde >= 3 ? '#fee2e2' : diasDesde >= 2 ? '#fef3c7' : '#d1fae5';
-    hDash.getRange(fila, 9).setBackground(colorAlerta);
-
-    fila++;
-    idx++;
-  });
-
-  // Anchos de columna
-  [160, 120, 100, 120, 110, 100, 90, 100, 110, 90].forEach((w, i) => {
-    hDash.setColumnWidth(i + 1, w);
-  });
-  hDash.setFrozenRows(4);
-  hDash.setFrozenColumns(1);
+  [160,60,90,100,80,110,90,90,100,110].forEach((w,i)=>hDash.setColumnWidth(i+1,w));
+  hDash.setFrozenRows(4); hDash.setFrozenColumns(1);
+  SpreadsheetApp.getActiveSpreadsheet().toast('Dashboard actualizado ✅','La Campestre',4);
 }
 
-
-// ── ENTREGAS DE ALIMENTO (registro de Andrés) ────────────────
-function guardarEntregaAlimento(datos) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  let h = ss.getSheetByName(SHEET_ENTREGAS);
-  if (!h) {
-    h = ss.insertSheet(SHEET_ENTREGAS);
-    const hdrs = ['Timestamp','Fecha','Slug','Productor','Lote',
-                  'Inicial (sacos)','Recría (sacos)','Pre-postura (sacos)',
-                  'Ponedora 1 (sacos)','Ponedora 2 (sacos)','Otro (sacos)',
-                  'Total sacos','Total kg','Observaciones'];
-    h.getRange(1,1,1,hdrs.length).setValues([hdrs])
-      .setBackground('#1a1a2e').setFontColor('#ffffff').setFontWeight('bold');
-    h.setFrozenRows(1);
-  }
-  const s = datos.sacos || {};
-  const fila = [
-    new Date(datos.timestamp),
-    new Date(datos.fecha + 'T12:00:00'),
-    datos.slug,
-    datos.productor,
-    datos.lote,
-    s['Inicial']||0, s['Recría']||0, s['Pre-postura']||0,
-    s['Ponedora 1']||0, s['Ponedora 2']||0, s['Otro']||0,
-    datos.totalSacos||0,
-    datos.totalKg||0,
-    datos.obs||''
-  ];
-  h.appendRow(fila);
-  const uf = h.getLastRow();
-  h.getRange(uf,1).setNumberFormat('dd/mm/yyyy HH:mm');
-  h.getRange(uf,2).setNumberFormat('dd/mm/yyyy');
-  if (uf % 2 === 0) h.getRange(uf,1,1,14).setBackground('#f0faf3');
-
-  // Actualizar stock del lote en hoja LOTES
-  actualizarStockLote(datos.slug, datos.lote, datos.totalKg||0);
-  actualizarDashboard();
-}
-
-function actualizarStockLote(slug, lote, kgNuevos) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const h = _getHojaLotes(ss);
-  if (h.getLastRow() < 2) return;
-  const datos = h.getRange(2,1,h.getLastRow()-1,7).getValues();
-  datos.forEach((r,i) => {
-    if (r[0]===slug && r[2]===lote && String(r[3]).toUpperCase()==='ACTIVO') {
-      const stockActual = parseFloat(h.getRange(i+2,7).getValue())||0;
-      h.getRange(i+2,7).setValue(stockActual + kgNuevos);
-    }
-  });
-}
-
-// ── MENÚ MANUAL ──────────────────────────────────────────────
+// ── MENÚ ──────────────────────────────────────────────────────
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('🥚 La Campestre')
@@ -408,55 +357,27 @@ function onOpen() {
     .addToUi();
 }
 
-// ── MOSTRAR LINKS POR PRODUCTOR ───────────────────────────────
 function mostrarLinks() {
-  // Reemplaza BASE_URL con tu URL de GitHub Pages
-  const BASE_URL = 'https://alazoe.github.io/Camprestre_alimento/';
-
+  const BASE = 'http://avivet.cl/Campestre_alimento/';
   const slugs = {
-    'Criadero Epulef':   'epulef-criadero',
-    'Frank Epulef':      'epulef-frank',
-    'Agrícola Ñanculén': 'nanculen',
-    'Avícola Emplumados':'emplumados',
-    'Juan Becerra':      'becerra',
-    'Cristian Vergara':  'vergara',
-    'Huevos Calibú':     'calibu',
-    'Roberto Santelices':'santelices',
-    'Juan Pablo Herrera':'herrera',
-    'Copihue Real':      'copihue-real',
+    'Criadero Epulef':'epulef-criadero','Frank Epulef':'epulef-frank',
+    'Agrícola Ñanculén':'nanculen','Avícola Emplumados':'emplumados',
+    'Juan Becerra':'becerra','Cristian Vergara':'vergara',
+    'Huevos Calibú':'calibu','Roberto Santelices':'santelices',
+    'Juan Pablo Herrera':'herrera','Copihue Real':'copihue-real',
   };
-
-  let msg = 'Links para cada productor:\n\n';
-  Object.entries(slugs).forEach(([nombre, slug]) => {
-    msg += `${nombre}:\n${BASE_URL}?p=${slug}\n\n`;
-  });
-
-  SpreadsheetApp.getUi().alert('Links de acceso', msg, SpreadsheetApp.getUi().ButtonSet.OK);
+  let msg = 'Links productores:\n\n';
+  Object.entries(slugs).forEach(([n,s])=>{ msg+=`${n}:\n${BASE}?p=${s}\n\n`; });
+  msg += `\nAdmin:\n${BASE}Admin.html`;
+  SpreadsheetApp.getUi().alert('Links', msg, SpreadsheetApp.getUi().ButtonSet.OK);
 }
 
-// ── INSTRUCCIONES ─────────────────────────────────────────────
 function mostrarInstrucciones() {
-  SpreadsheetApp.getUi().alert(
-    '📋 Instrucciones del backend',
-    `1. Este script recibe los registros de la app web
-2. Los guarda en la hoja "REGISTROS"
-3. Actualiza el DASHBOARD automáticamente
-
-PARA PUBLICAR COMO APP WEB:
-• Implementar → Nueva implementación
-• Tipo: App web
-• Ejecutar como: Yo
-• Acceso: Cualquier persona
-• Copia la URL y pégala en index.html
-
-PARA AGREGAR PABELLONES A UN PRODUCTOR:
-• Edita el objeto PRODUCTORES en index.html
-• Agrega los nombres en el array "pabellones"
-
-DASHBOARD:
-• Se actualiza cada vez que llega un registro
-• También puedes actualizarlo manualmente
-• Alertas: 🔴 sin registrar ≥3 días, 🟡 ≥2 días, 🟢 OK`,
-    SpreadsheetApp.getUi().ButtonSet.OK
-  );
+  SpreadsheetApp.getUi().alert('Instrucciones',
+    '1. Backend recibe registros de la app web\n' +
+    '2. Stock se maneja por PRODUCTOR (no por lote)\n' +
+    '3. Entregas de Andrés suman al stock\n' +
+    '4. Registros diarios descuentan del stock\n' +
+    '5. Hojas: REGISTROS, LOTES, ENTREGAS_ALIMENTO, STOCK_PRODUCTORES, DASHBOARD',
+    SpreadsheetApp.getUi().ButtonSet.OK);
 }
