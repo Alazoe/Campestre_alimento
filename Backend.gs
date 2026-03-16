@@ -1,383 +1,426 @@
-// ============================================================
-// HUEVOS LA CAMPESTRE — Backend Apps Script v3
-// ============================================================
-const SHEET_ID       = '1mL9aBs-4UPpQW-iJBxBc3Wbh2Xg88svi5uUK2qeBpAI';
-const SHEET_LOTES    = 'LOTES';
-const SHEET_ENTREGAS = 'ENTREGAS_ALIMENTO';
-const SHEET_REGISTROS= 'REGISTROS';
-const SHEET_DASH     = 'DASHBOARD';
-const KG_SACO        = 25;
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1a2e">
+<title>Entregas — La Campestre Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#1a1a2e;--bg2:#16213e;--ac:#f5c842;--verde:#2d8a52;--rojo:#e53e3e;--gris:#8892a4;--gc:#f3f4f6;--bl:#fff;--tx:#111827;--card:#fff;--r:14px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);min-height:100vh;color:var(--tx);padding-bottom:60px}
+/* LOGIN */
+#login{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999}
+.login-box{background:#0f3460;border-radius:20px;padding:32px 28px;width:300px;text-align:center}
+.login-logo{font-family:'DM Serif Display',serif;font-size:20px;color:var(--bl);margin-bottom:4px}
+.login-sub{font-size:11px;color:rgba(255,255,255,.4);letter-spacing:2px;text-transform:uppercase;margin-bottom:24px}
+.login-inp{width:100%;padding:14px;border:none;border-radius:12px;font-size:16px;text-align:center;letter-spacing:4px;background:rgba(255,255,255,.1);color:var(--bl);margin-bottom:12px}
+.login-inp::placeholder{letter-spacing:1px;color:rgba(255,255,255,.3)}
+.login-inp:focus{outline:none;background:rgba(255,255,255,.15)}
+.login-btn{width:100%;padding:14px;border-radius:12px;border:none;background:var(--ac);color:#111;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer}
+.login-err{font-size:12px;color:#fca5a5;margin-top:8px;display:none}
+/* HEADER */
+.hdr{background:var(--bg2);padding:20px 18px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06)}
+.hdr-tit{font-family:'DM Serif Display',serif;font-size:20px;color:var(--bl)}
+.hdr-sub{font-size:11px;color:var(--gris);margin-top:2px}
+.btn-logout{padding:6px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:transparent;color:var(--gris);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif}
+/* MAIN */
+.main{padding:18px}
+/* TABS */
+.tabs{display:flex;gap:6px;margin-bottom:18px;background:rgba(255,255,255,.06);border-radius:12px;padding:4px}
+.tab{flex:1;padding:9px 6px;border-radius:9px;border:none;background:transparent;color:rgba(255,255,255,.45);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s}
+.tab.active{background:var(--ac);color:#111;font-weight:600}
+/* CARD */
+.card{background:var(--card);border-radius:16px;padding:20px 18px;margin-bottom:16px}
+.card-tit{font-size:13px;font-weight:600;color:#374151;margin-bottom:14px;text-transform:uppercase;letter-spacing:1px}
+/* FORM */
+.fila{margin-bottom:13px}
+label{display:block;font-size:12px;font-weight:500;color:#6b7280;margin-bottom:5px}
+input[type=date],input[type=number],input[type=text],select{width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:11px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--tx);background:var(--gc);-webkit-appearance:none}
+input:focus,select:focus{outline:none;border-color:var(--verde);background:var(--bl)}
+.sel-w{position:relative}
+.sel-w::after{content:'▾';position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--verde);pointer-events:none}
+select{padding-right:34px;cursor:pointer}
+/* SACOS GRID */
+.sacos-wrap{background:#f8fafc;border-radius:12px;padding:14px;margin-bottom:12px}
+.sacos-tit{font-size:11px;font-weight:600;color:var(--verde);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.sacos-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.scard{background:var(--bl);border-radius:10px;border:1.5px solid #e5e7eb;padding:10px;transition:border-color .15s}
+.scard:focus-within{border-color:var(--verde);background:#f0faf3}
+.slabel{font-size:10px;font-weight:600;color:#374151;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+.sinput{width:100%;padding:7px 8px;border:1px solid #e5e7eb;border-radius:7px;font-size:15px;font-weight:600;text-align:center;background:var(--gc)}
+.sinput:focus{outline:none;border-color:var(--verde);background:var(--bl)}
+.ssub{font-size:10px;color:#9ca3af;text-align:center;margin-top:2px}
+.total-row{background:#f0faf3;border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border:1px solid #c6e9d0}
+.total-l{font-size:12px;color:var(--verde);font-weight:500}
+.total-v{font-size:18px;font-weight:700;color:#0a2e1a}
+/* RESUMEN PREVIO */
+.resumen-prev{background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:11px 13px;font-size:12px;color:#856404;margin-bottom:12px;display:none}
+.resumen-prev.show{display:block}
+/* BTN */
+.btn-env{width:100%;padding:15px;background:#0a2e1a;color:var(--bl);border:none;border-radius:13px;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;cursor:pointer;transition:transform .15s}
+.btn-env:active{transform:scale(.98)}
+.btn-env:disabled{opacity:.45}
+.spinner{display:none;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.est{display:none;padding:12px;border-radius:10px;margin-top:10px;font-size:13px;font-weight:500;text-align:center}
+.est.ok{background:#d1fae5;color:#065f46;display:block}
+.est.err{background:#fee2e2;color:#991b1b;display:block}
+/* HISTORIAL ENTREGAS */
+.entrega-item{background:var(--bl);border-radius:13px;padding:14px 16px;margin-bottom:10px;border:0.5px solid #e5e7eb}
+.ei-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.ei-productor{font-size:14px;font-weight:600;color:var(--tx)}
+.ei-fecha{font-size:12px;color:var(--gris)}
+.ei-total{font-size:16px;font-weight:700;color:#0a2e1a}
+.ei-detalle{font-size:12px;color:var(--gris);line-height:1.6;margin-top:4px}
+.ei-sacos{font-size:11px;color:#9ca3af}
+.badge-dieta{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:#e8f5ec;color:var(--verde);margin-right:4px;margin-bottom:2px}
+/* DASHBOARD */
+.dash-card{background:var(--card);border-radius:14px;padding:16px;margin-bottom:10px}
+.dash-nombre{font-size:14px;font-weight:600;color:var(--tx);margin-bottom:6px}
+.dash-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.dash-l{font-size:11px;color:var(--gris)}
+.dash-v{font-size:13px;font-weight:600;color:var(--tx)}
+.dias-badge{padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.dias-ok{background:#d1fae5;color:#065f46}
+.dias-warn{background:#fef3c7;color:#92400e}
+.dias-crit{background:#fee2e2;color:#991b1b}
+.dias-nd{background:var(--gc);color:var(--gris)}
+/* Carga */
+#pcarga{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:998}
+#pcarga .logo{font-family:'DM Serif Display',serif;font-size:18px;color:var(--bl)}
+.cbar{width:100px;height:2px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
+.cfill{height:100%;background:var(--ac);animation:cargando 1s ease forwards}
+@keyframes cargando{from{width:0}to{width:100%}}
+</style>
+</head>
+<body>
 
-// ── doPost ────────────────────────────────────────────────────
-function doPost(e) {
-  try {
-    const d = JSON.parse(e.postData.contents);
-    if      (d.accion === 'registro')   guardarRegistro(d);
-    else if (d.accion === 'nuevo_lote') agregarLote(d);
-    else if (d.accion === 'baja_lote')  darDeBajaLote(d.slug, d.lote);
-    else if (d.accion === 'entrega')    guardarEntrega(d);
-    else if (d.accion === 'set_dieta')  guardarDietaProductor(d.slug, d.dieta);
-    return _json({ ok: true });
-  } catch(err) {
-    return _json({ ok: false, error: err.message });
+<div id="pcarga">
+  <div class="logo">La Campestre · Admin</div>
+  <div class="cbar"><div class="cfill"></div></div>
+</div>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="login-box">
+    <div style="font-size:32px;margin-bottom:12px">🥚</div>
+    <div class="login-logo">La Campestre</div>
+    <div class="login-sub">Acceso administrador</div>
+    <input type="password" class="login-inp" id="login-pwd" placeholder="Clave de acceso"
+           onkeydown="if(event.key==='Enter')verificarClave()">
+    <button class="login-btn" onclick="verificarClave()">Ingresar</button>
+    <div class="login-err" id="login-err">Clave incorrecta</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <div class="hdr">
+    <div>
+      <div class="hdr-tit">La Campestre · Admin</div>
+      <div class="hdr-sub" id="hdr-fecha"></div>
+    </div>
+    <button class="btn-logout" onclick="logout()">Salir</button>
+  </div>
+
+  <div class="main">
+    <div class="tabs">
+      <button class="tab active" onclick="setTab('nueva',this)">+ Nueva entrega</button>
+      <button class="tab" onclick="setTab('historial',this)">Historial</button>
+      <button class="tab" onclick="setTab('dashboard',this)">Dashboard</button>
+    </div>
+
+    <!-- TAB: NUEVA ENTREGA -->
+    <div id="tab-nueva">
+      <div class="card">
+        <div class="card-tit">Registrar entrega de alimento</div>
+
+        <div class="fila">
+          <label>Fecha de entrega</label>
+          <input type="date" id="f-fecha">
+        </div>
+
+        <div class="fila">
+          <label>Productor</label>
+          <div class="sel-w">
+            <select id="f-prod" onchange="mostrarPrevio(this.value)">
+              <option value="">— Seleccionar productor —</option>
+            </select>
+          </div>
+        </div>
+
+
+
+        <div id="previo-wrap" class="resumen-prev"></div>
+
+        <div class="sacos-wrap">
+          <div class="sacos-tit">Sacos entregados por tipo de dieta (1 saco = 25 kg)</div>
+          <div class="sacos-grid" id="sacos-grid"></div>
+          <div style="margin-top:10px" class="total-row">
+            <div class="total-l">Total</div>
+            <div class="total-v"><span id="tot-sacos">0</span> sacos · <span id="tot-kg">0</span> kg</div>
+          </div>
+        </div>
+
+        <div class="fila">
+          <label>Observaciones (opcional)</label>
+          <input type="text" id="f-obs" placeholder="ej: Se dejó en el galpón principal">
+        </div>
+
+        <button class="btn-env" id="btn-env" onclick="enviarEntrega()">
+          <span id="btn-txt">Registrar entrega</span>
+          <div class="spinner" id="spinner"></div>
+        </button>
+        <div class="est" id="estado"></div>
+      </div>
+    </div>
+
+    <!-- TAB: HISTORIAL -->
+    <div id="tab-historial" style="display:none">
+      <div style="font-size:12px;color:var(--gris);margin-bottom:12px">Últimas entregas registradas</div>
+      <div id="hist-lista">
+        <div style="text-align:center;padding:30px;color:var(--gris);font-size:13px">Cargando historial...</div>
+      </div>
+    </div>
+
+    <!-- TAB: DASHBOARD -->
+    <div id="tab-dashboard" style="display:none">
+      <div style="font-size:12px;color:var(--gris);margin-bottom:12px">Stock estimado por productor</div>
+      <div id="dash-lista">
+        <div style="text-align:center;padding:30px;color:var(--gris);font-size:13px">Cargando dashboard...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxEbhLAa_fsOCdBy3tlHLMaGESt7n-UQ1RdnPWEy-AmMM5VDm9UZlVzYNkf7fUWWSJn9A/exec';
+const CLAVE = 'campestre2024'; // Cambia esta clave
+const DIETAS = ['Inicial','Recría','Pre-postura','Ponedora 1','Ponedora 2','Otro'];
+const SACOS_KG = 25;
+const PRODUCTORES = {
+  'epulef-criadero':'Criadero Epulef',
+  'epulef-frank':   'Frank Epulef',
+  'nanculen':       'Agrícola Ñanculén',
+  'emplumados':     'Avícola Emplumados',
+  'becerra':        'Juan Becerra',
+  'vergara':        'Cristian Vergara',
+  'calibu':         'Huevos Calibú',
+  'santelices':     'Roberto Santelices',
+  'herrera':        'Juan Pablo Herrera',
+  'copihue-real':   'Copihue Real',
+};
+
+let lotesCache={};
+let entregasLocal=[];
+
+// ─── LOGIN ────────────────────────────────────────────────────
+function verificarClave(){
+  const pwd=document.getElementById('login-pwd').value;
+  if(pwd===CLAVE){
+    localStorage.setItem('admin_auth','1');
+    document.getElementById('login').style.display='none';
+    document.getElementById('app').style.display='block';
+    iniciarApp();
+  } else {
+    document.getElementById('login-err').style.display='block';
+    document.getElementById('login-pwd').value='';
   }
 }
+function logout(){localStorage.removeItem('admin_auth');location.reload();}
 
-// ── doGet ─────────────────────────────────────────────────────
-function doGet(e) {
-  const accion = e.parameter.accion || '';
-  const slug   = e.parameter.slug   || '';
-  if (!slug) return _json({ ok: false, error: 'Sin slug' });
-
-  if (accion === 'lotes') {
-    // Devuelve lotes + stock del PRODUCTOR (no por lote) + dieta guardada
-    const lotes      = obtenerLotesActivos(slug);
-    const stockProd  = obtenerStockProductor(slug);
-    const dieta      = obtenerDietaProductor(slug);
-    return _json({ ok: true, lotes, stockKg: stockProd, dieta });
+// ─── BOOT ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  setTimeout(()=>document.getElementById('pcarga').style.display='none',800);
+  if(localStorage.getItem('admin_auth')==='1'){
+    document.getElementById('login').style.display='none';
+    document.getElementById('app').style.display='block';
+    iniciarApp();
   }
-  if (accion === 'dashboard') {
-    return _json({ ok: true, data: buildDashboardData() });
-  }
-  return _json({ ok: false, error: 'Accion no reconocida' });
+});
+
+function iniciarApp(){
+  document.getElementById('hdr-fecha').textContent=new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  poblarProductores();
+  construirSacosGrid();
+  document.getElementById('f-fecha').value=new Date().toISOString().split('T')[0];
+  entregasLocal=JSON.parse(localStorage.getItem('admin_entregas')||'[]');
 }
 
-function _json(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
+// ─── TABS ─────────────────────────────────────────────────────
+function setTab(tab,btn){
+  ['nueva','historial','dashboard'].forEach(t=>document.getElementById('tab-'+t).style.display=t===tab?'':'none');
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(tab==='historial')renderHistorial();
+  if(tab==='dashboard')renderDashboard();
 }
 
-// ── REGISTROS DIARIOS ─────────────────────────────────────────
-function guardarRegistro(d) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  let h = ss.getSheetByName(SHEET_REGISTROS);
-  if (!h) {
-    h = ss.insertSheet(SHEET_REGISTROS);
-    h.getRange(1,1,1,12).setValues([[
-      'Timestamp','Fecha','Slug','Productor','Pabellón',
-      'Dieta','Total kg','Aves muertas','Huevos','Aves totales','% Postura','Observaciones'
-    ]]).setBackground('#0a2e1a').setFontColor('#fff').setFontWeight('bold');
-    h.setFrozenRows(1);
-  }
-  const postura = (d.aves > 0 && d.huevos > 0)
-    ? Math.round(d.huevos / d.aves * 10000) / 100 : '';
-
-  h.appendRow([
-    new Date(d.timestamp),
-    new Date(d.fecha + 'T12:00:00'),
-    d.slug, d.productor, d.pabellon,
-    d.dieta || '',
-    parseFloat(d.total_kg) || 0,
-    parseInt(d.muertas) || 0,
-    parseInt(d.huevos)  || 0,
-    parseInt(d.aves)    || 0,
-    postura,
-    d.obs || ''
-  ]);
-  const uf = h.getLastRow();
-  h.getRange(uf,1).setNumberFormat('dd/mm/yyyy HH:mm');
-  h.getRange(uf,2).setNumberFormat('dd/mm/yyyy');
-  if (uf % 2 === 0) h.getRange(uf,1,1,12).setBackground('#f0faf3');
-
-  // Descontar del stock del productor
-  descontarStockProductor(d.slug, parseFloat(d.total_kg)||0);
-  actualizarDashboard();
-}
-
-// ── STOCK POR PRODUCTOR (no por lote) ────────────────────────
-// Col 7 de LOTES = Stock kg ACUMULADO DEL PRODUCTOR
-// Lo guardamos en una fila especial con lote = '__STOCK__'
-
-function _getHojaStock(ss) {
-  // Reutilizamos la hoja ENTREGAS para llevar el stock neto por productor
-  let h = ss.getSheetByName('STOCK_PRODUCTORES');
-  if (!h) {
-    h = ss.insertSheet('STOCK_PRODUCTORES');
-    h.getRange(1,1,1,4).setValues([['Slug','Productor','Stock kg','Última actualización']])
-      .setBackground('#0a2e1a').setFontColor('#fff').setFontWeight('bold');
-    h.setFrozenRows(1);
-    h.setColumnWidth(1,130); h.setColumnWidth(2,180);
-    h.setColumnWidth(3,110); h.setColumnWidth(4,150);
-  }
-  return h;
-}
-
-function obtenerStockProductor(slug) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const h  = _getHojaStock(ss);
-  if (h.getLastRow() < 2) return 0;
-  const datos = h.getRange(2,1,h.getLastRow()-1,3).getValues();
-  const fila  = datos.find(r => r[0] === slug);
-  return fila ? parseFloat(fila[2]) || 0 : 0;
-}
-
-function sumarStockProductor(slug, productor, kg) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const h  = _getHojaStock(ss);
-  if (h.getLastRow() >= 2) {
-    const datos = h.getRange(2,1,h.getLastRow()-1,3).getValues();
-    const idx   = datos.findIndex(r => r[0] === slug);
-    if (idx >= 0) {
-      const actual = parseFloat(datos[idx][2]) || 0;
-      h.getRange(idx+2, 3).setValue(actual + kg);
-      h.getRange(idx+2, 4).setValue(new Date()).setNumberFormat('dd/mm/yyyy HH:mm');
-      return;
-    }
-  }
-  h.appendRow([slug, productor, kg, new Date()]);
-  h.getRange(h.getLastRow(),4).setNumberFormat('dd/mm/yyyy HH:mm');
-}
-
-function descontarStockProductor(slug, kg) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const h  = _getHojaStock(ss);
-  if (h.getLastRow() < 2) return;
-  const datos = h.getRange(2,1,h.getLastRow()-1,3).getValues();
-  const idx   = datos.findIndex(r => r[0] === slug);
-  if (idx >= 0) {
-    const actual = parseFloat(datos[idx][2]) || 0;
-    h.getRange(idx+2, 3).setValue(Math.max(0, actual - kg));
-    h.getRange(idx+2, 4).setValue(new Date()).setNumberFormat('dd/mm/yyyy HH:mm');
-  }
-}
-
-// ── DIETA POR PRODUCTOR ───────────────────────────────────────
-function guardarDietaProductor(slug, dieta) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const h  = _getHojaStock(ss);
-  if (h.getLastRow() < 2) return;
-  const datos = h.getRange(2,1,h.getLastRow()-1,5).getValues();
-  const idx   = datos.findIndex(r => r[0] === slug);
-  // Aseguramos que col 5 exista para dieta
-  if (idx >= 0) {
-    h.getRange(idx+2, 5).setValue(dieta);
-  }
-}
-
-function obtenerDietaProductor(slug) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const h  = _getHojaStock(ss);
-  if (h.getLastRow() < 2) return null;
-  // Verificar si tiene columna 5
-  const lastCol = h.getLastColumn();
-  if (lastCol < 5) return null;
-  const datos = h.getRange(2,1,h.getLastRow()-1,5).getValues();
-  const fila  = datos.find(r => r[0] === slug);
-  return fila ? (fila[4] || null) : null;
-}
-
-// ── ENTREGAS DE ALIMENTO (Andrés) ─────────────────────────────
-function guardarEntrega(d) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  let h = ss.getSheetByName(SHEET_ENTREGAS);
-  if (!h) {
-    h = ss.insertSheet(SHEET_ENTREGAS);
-    h.getRange(1,1,1,10).setValues([[
-      'Timestamp','Fecha','Slug','Productor',
-      'Inicial(s)','Recría(s)','Pre-postura(s)',
-      'Ponedora1(s)','Ponedora2(s)','Otro(s)',
-      'Total sacos','Total kg','Observaciones'
-    ]]);
-    // Fix: 13 cols
-    h.getRange(1,1,1,13).setBackground('#1a1a2e').setFontColor('#fff').setFontWeight('bold');
-    h.setFrozenRows(1);
-  }
-  const s = d.sacos || {};
-  h.appendRow([
-    new Date(d.timestamp),
-    new Date(d.fecha + 'T12:00:00'),
-    d.slug, d.productor,
-    s['Inicial']||0, s['Recría']||0, s['Pre-postura']||0,
-    s['Ponedora 1']||0, s['Ponedora 2']||0, s['Otro']||0,
-    d.totalSacos||0, d.totalKg||0, d.obs||''
-  ]);
-  const uf = h.getLastRow();
-  h.getRange(uf,1).setNumberFormat('dd/mm/yyyy HH:mm');
-  h.getRange(uf,2).setNumberFormat('dd/mm/yyyy');
-  if (uf % 2 === 0) h.getRange(uf,1,1,13).setBackground('#f0faf3');
-
-  // Sumar al stock del productor
-  sumarStockProductor(d.slug, d.productor, parseFloat(d.totalKg)||0);
-  actualizarDashboard();
-}
-
-// ── LOTES ─────────────────────────────────────────────────────
-function _getHojaLotes(ss) {
-  let h = ss.getSheetByName(SHEET_LOTES);
-  if (!h) {
-    h = ss.insertSheet(SHEET_LOTES);
-    h.getRange(1,1,1,9).setValues([[
-      'Slug','Productor','Lote','Estado',
-      'Fecha alta','Fecha baja','Aves','Fecha Nac.','Dieta'
-    ]]).setBackground('#0a2e1a').setFontColor('#fff').setFontWeight('bold');
-    h.setFrozenRows(1);
-    [130,160,140,80,110,110,80,110,120].forEach((w,i)=>h.setColumnWidth(i+1,w));
-  }
-  return h;
-}
-
-function obtenerLotesActivos(slug) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const h  = _getHojaLotes(ss);
-  if (h.getLastRow() < 2) return [];
-  const datos = h.getRange(2,1,h.getLastRow()-1,9).getValues();
-  return datos
-    .filter(r => r[0]===slug && String(r[3]).toUpperCase()==='ACTIVO')
-    .map(r => ({
-      nombre:   String(r[2]),
-      aves:     parseInt(r[6]) || 0,
-      fechaNac: r[7] ? Utilities.formatDate(new Date(r[7]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : null,
-    }));
-}
-
-function agregarLote(d) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const h  = _getHojaLotes(ss);
-  if (h.getLastRow() >= 2) {
-    const datos = h.getRange(2,1,h.getLastRow()-1,4).getValues();
-    if (datos.some(r => r[0]===d.slug && r[2]===d.lote && String(r[3]).toUpperCase()==='ACTIVO')) return;
-  }
-  const fn = d.fechaNac ? new Date(d.fechaNac + 'T12:00:00') : '';
-  h.appendRow([d.slug, d.productor, d.lote, 'ACTIVO', new Date(), '', parseInt(d.aves)||0, fn, '']);
-  const uf = h.getLastRow();
-  h.getRange(uf,5).setNumberFormat('dd/mm/yyyy');
-  if (fn) h.getRange(uf,8).setNumberFormat('dd/mm/yyyy');
-  if (uf % 2 === 0) h.getRange(uf,1,1,9).setBackground('#f0faf3');
-}
-
-function darDeBajaLote(slug, nombreLote) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const h  = _getHojaLotes(ss);
-  if (h.getLastRow() < 2) return;
-  const datos = h.getRange(2,1,h.getLastRow()-1,4).getValues();
-  datos.forEach((r,i) => {
-    if (r[0]===slug && r[2]===nombreLote && String(r[3]).toUpperCase()==='ACTIVO') {
-      h.getRange(i+2,4).setValue('INACTIVO');
-      h.getRange(i+2,6).setValue(new Date()).setNumberFormat('dd/mm/yyyy');
-      h.getRange(i+2,1,1,9).setBackground('#fee2e2');
-    }
+// ─── FORM ────────────────────────────────────────────────────
+function poblarProductores(){
+  const sel=document.getElementById('f-prod');
+  Object.entries(PRODUCTORES).forEach(([slug,nombre])=>{
+    const o=document.createElement('option');
+    o.value=slug;o.textContent=nombre;
+    sel.appendChild(o);
   });
 }
 
-// ── DASHBOARD ─────────────────────────────────────────────────
-function buildDashboardData() {
-  const ss    = SpreadsheetApp.openById(SHEET_ID);
-  const hStock= _getHojaStock(ss);
-  const hLotes= _getHojaLotes(ss);
-  const hRegs = ss.getSheetByName(SHEET_REGISTROS);
-  const result= [];
 
-  if (hStock.getLastRow() < 2) return result;
-  const stocks = hStock.getRange(2,1,hStock.getLastRow()-1,5).getValues();
 
-  stocks.forEach(sr => {
-    const slug     = sr[0];
-    const productor= sr[1];
-    const stockKg  = parseFloat(sr[2]) || 0;
-    const dieta    = sr[4] || '—';
+function escAttr(s){return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
 
-    // Lotes activos
-    const lotesData = hLotes.getLastRow()>=2
-      ? hLotes.getRange(2,1,hLotes.getLastRow()-1,7).getValues()
-          .filter(r=>r[0]===slug && String(r[3]).toUpperCase()==='ACTIVO')
-      : [];
-    const totalAves = lotesData.reduce((s,r)=>s+(parseInt(r[6])||0),0);
-
-    // Último registro
-    let ultimaFecha = '—', diasSinReg = '—';
-    if (hRegs && hRegs.getLastRow()>=2) {
-      const regs = hRegs.getRange(2,1,hRegs.getLastRow()-1,12).getValues()
-        .filter(r=>r[2]===slug).sort((a,b)=>b[1]-a[1]);
-      if (regs.length) {
-        ultimaFecha = Utilities.formatDate(new Date(regs[0][1]), Session.getScriptTimeZone(), 'dd/MM/yyyy');
-        diasSinReg  = Math.floor((Date.now()-new Date(regs[0][1]))/(86400000));
-      }
-    }
-
-    // Días de stock estimados
-    const consumoDia = totalAves * 0.115;
-    const diasStock  = consumoDia>0 ? Math.round(stockKg/consumoDia) : null;
-
-    result.push({ slug, productor, stockKg, totalAves, diasStock, dieta, ultimaFecha, diasSinReg, lotes: lotesData.length });
-  });
-
-  return result;
+function mostrarPrevio(slug){
+  if(!slug){document.getElementById('previo-wrap').classList.remove('show');return;}
+  const prev=document.getElementById('previo-wrap');
+  const ultimas=entregasLocal.filter(e=>e.slug===slug).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  if(!ultimas.length){prev.classList.remove('show');return;}
+  const ult=ultimas[0];
+  const dietaTxt=Object.entries(ult.sacos).filter(([,v])=>v>0).map(([k,v])=>`${k}: ${v}s`).join(' · ');
+  prev.textContent=`Última entrega: ${ult.fecha} — ${ult.totalKg.toLocaleString('es-CL')} kg · ${dietaTxt}`;
+  prev.classList.add('show');
 }
 
-function actualizarDashboard() {
-  const ss  = SpreadsheetApp.openById(SHEET_ID);
-  let hDash = ss.getSheetByName(SHEET_DASH);
-  if (!hDash) hDash = ss.insertSheet(SHEET_DASH, 0);
-  hDash.clearContents(); hDash.clearFormats();
-
-  hDash.getRange('A1:J1').merge().setValue('📊  DASHBOARD — HUEVOS LA CAMPESTRE')
-    .setBackground('#0a2e1a').setFontColor('#fff').setFontWeight('bold').setFontSize(14).setVerticalAlignment('middle');
-  hDash.setRowHeight(1,42);
-  hDash.getRange('A2').setValue('Actualizado: '+Utilities.formatDate(new Date(),Session.getScriptTimeZone(),'dd/MM/yyyy HH:mm'))
-    .setFontStyle('italic').setFontColor('#888').setFontSize(10);
-
-  hDash.getRange('A4:J4').setValues([[
-    'Productor','Lotes','Aves totales','Stock kg','Días stock',
-    'Dieta actual','Última act.','Días sin reg.','Alerta stock','Alerta registro'
-  ]]).setBackground('#1a5c34').setFontColor('#fff').setFontWeight('bold')
-    .setWrap(true).setVerticalAlignment('middle').setHorizontalAlignment('center');
-  hDash.setRowHeight(4,45);
-
-  const data = buildDashboardData();
-  data.forEach((row, i) => {
-    const fila = i + 5;
-    const alertaStock = row.diasStock===null?'Sin aves':row.diasStock<=5?'🔴 URGENTE':row.diasStock<=12?'🟡 ATENCIÓN':'🟢 OK';
-    const alertaReg   = row.diasSinReg==='—'?'Sin registros':row.diasSinReg>=3?'🔴 Sin registrar':row.diasSinReg>=2?'🟡 Hace 2 días':'🟢 Al día';
-    hDash.getRange(fila,1,1,10).setValues([[
-      row.productor, row.lotes, row.totalAves,
-      Math.round(row.stockKg).toLocaleString(), row.diasStock!==null?row.diasStock+'d':'—',
-      row.dieta, row.ultimaFecha, row.diasSinReg==='—'?'—':row.diasSinReg+' días',
-      alertaStock, alertaReg
-    ]]);
-    hDash.getRange(fila,1,1,10).setBackground(i%2===0?'#fff':'#f0faf3');
-    const cStock = row.diasStock===null?'#f3f4f6':row.diasStock<=5?'#fee2e2':row.diasStock<=12?'#fef3c7':'#d1fae5';
-    const cReg   = row.diasSinReg==='—'?'#f3f4f6':row.diasSinReg>=3?'#fee2e2':row.diasSinReg>=2?'#fef3c7':'#d1fae5';
-    hDash.getRange(fila,9).setBackground(cStock);
-    hDash.getRange(fila,10).setBackground(cReg);
-  });
-
-  [160,60,90,100,80,110,90,90,100,110].forEach((w,i)=>hDash.setColumnWidth(i+1,w));
-  hDash.setFrozenRows(4); hDash.setFrozenColumns(1);
-  SpreadsheetApp.getActiveSpreadsheet().toast('Dashboard actualizado ✅','La Campestre',4);
+function construirSacosGrid(){
+  document.getElementById('sacos-grid').innerHTML=DIETAS.map(d=>`
+    <div class="scard">
+      <div class="slabel">${d}</div>
+      <input class="sinput" type="number" id="s_${sd(d)}" min="0" value="0"
+             inputmode="numeric" oninput="recalcSacos()">
+      <div class="ssub">sacos</div>
+    </div>`).join('');
+}
+function sd(d){return d.toLowerCase().replace(/[^a-z0-9]/g,'_');}
+function recalcSacos(){
+  let sacos=0;
+  DIETAS.forEach(d=>{sacos+=parseInt(document.getElementById('s_'+sd(d))?.value||0)||0;});
+  document.getElementById('tot-sacos').textContent=sacos;
+  document.getElementById('tot-kg').textContent=(sacos*SACOS_KG).toLocaleString('es-CL');
+}
+function obtenerSacos(){
+  const o={};
+  DIETAS.forEach(d=>{o[d]=parseInt(document.getElementById('s_'+sd(d))?.value||0)||0;});
+  return o;
 }
 
-// ── MENÚ ──────────────────────────────────────────────────────
-function onOpen() {
-  SpreadsheetApp.getUi()
-    .createMenu('🥚 La Campestre')
-    .addItem('Actualizar Dashboard', 'actualizarDashboard')
-    .addItem('Ver links de productores', 'mostrarLinks')
-    .addSeparator()
-    .addItem('📋 Instrucciones', 'mostrarInstrucciones')
-    .addToUi();
-}
+// ─── ENVIAR ENTREGA ───────────────────────────────────────────
+async function enviarEntrega(){
+  const slug=document.getElementById('f-prod').value;
+  const fecha=document.getElementById('f-fecha').value;
+  const sacos=obtenerSacos();
+  const totalSacos=Object.values(sacos).reduce((s,v)=>s+v,0);
+  const totalKg=totalSacos*SACOS_KG;
+  const obs=document.getElementById('f-obs').value.trim();
+  if(!slug){mostrarEst('Selecciona un productor.',false);return;}
+  if(!fecha){mostrarEst('Ingresa la fecha.',false);return;}
+  if(!totalSacos){mostrarEst('Ingresa al menos un saco en algún tipo de dieta.',false);return;}
 
-function mostrarLinks() {
-  const BASE = 'http://avivet.cl/Campestre_alimento/';
-  const slugs = {
-    'Criadero Epulef':'epulef-criadero','Frank Epulef':'epulef-frank',
-    'Agrícola Ñanculén':'nanculen','Avícola Emplumados':'emplumados',
-    'Juan Becerra':'becerra','Cristian Vergara':'vergara',
-    'Huevos Calibú':'calibu','Roberto Santelices':'santelices',
-    'Juan Pablo Herrera':'herrera','Copihue Real':'copihue-real',
+  const datos={
+    accion:'entrega',
+    slug, productor:PRODUCTORES[slug], fecha,
+    sacos, totalSacos, totalKg, obs,
+    timestamp:new Date().toISOString(),
   };
-  let msg = 'Links productores:\n\n';
-  Object.entries(slugs).forEach(([n,s])=>{ msg+=`${n}:\n${BASE}?p=${s}\n\n`; });
-  msg += `\nAdmin:\n${BASE}Admin.html`;
-  SpreadsheetApp.getUi().alert('Links', msg, SpreadsheetApp.getUi().ButtonSet.OK);
+
+  setLoad(true);
+  try{
+    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(datos)});
+    // Guardar local
+    entregasLocal.push(datos);
+    localStorage.setItem('admin_entregas',JSON.stringify(entregasLocal));
+    mostrarEst(`✅ Entrega registrada: ${totalSacos} sacos (${totalKg.toLocaleString('es-CL')} kg) para ${PRODUCTORES[slug]}`,true);
+    resetEntrega();
+  }catch{
+    mostrarEst('Error de conexión. Revisa e intenta de nuevo.',false);
+  }finally{setLoad(false);}
 }
 
-function mostrarInstrucciones() {
-  SpreadsheetApp.getUi().alert('Instrucciones',
-    '1. Backend recibe registros de la app web\n' +
-    '2. Stock se maneja por PRODUCTOR (no por lote)\n' +
-    '3. Entregas de Andrés suman al stock\n' +
-    '4. Registros diarios descuentan del stock\n' +
-    '5. Hojas: REGISTROS, LOTES, ENTREGAS_ALIMENTO, STOCK_PRODUCTORES, DASHBOARD',
-    SpreadsheetApp.getUi().ButtonSet.OK);
+function resetEntrega(){
+  DIETAS.forEach(d=>{const el=document.getElementById('s_'+sd(d));if(el)el.value=0;});
+  recalcSacos();
+  document.getElementById('f-obs').value='';
 }
+function setLoad(on){
+  document.getElementById('btn-txt').style.display=on?'none':'';
+  document.getElementById('spinner').style.display=on?'block':'none';
+  document.getElementById('btn-env').disabled=on;
+}
+function mostrarEst(msg,ok){
+  const el=document.getElementById('estado');
+  el.textContent=msg;el.className='est '+(ok?'ok':'err');
+  setTimeout(()=>el.className='est',6000);
+}
+
+// ─── HISTORIAL ───────────────────────────────────────────────
+function renderHistorial(){
+  const c=document.getElementById('hist-lista');
+  const sorted=[...entregasLocal].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  if(!sorted.length){c.innerHTML='<div style="text-align:center;padding:30px;color:var(--gris);font-size:13px">Sin entregas registradas aún.</div>';return;}
+  c.innerHTML=sorted.slice(0,50).map(e=>{
+    const dietasBadges=Object.entries(e.sacos).filter(([,v])=>v>0).map(([k,v])=>`<span class="badge-dieta">${k}: ${v} s.</span>`).join('');
+    return `<div class="entrega-item">
+      <div class="ei-header">
+        <div><div class="ei-productor">${e.productor}</div><div class="ei-fecha">${e.fecha}</div></div>
+        <div class="ei-total">${e.totalKg.toLocaleString('es-CL')} kg</div>
+      </div>
+      <div class="ei-detalle">${dietasBadges}</div>
+      <div class="ei-sacos" style="margin-top:4px">${e.totalSacos} sacos${e.obs?' · '+e.obs:''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── DASHBOARD STOCK ─────────────────────────────────────────
+async function renderDashboard(){
+  // Cargar lotes de todos los productores para tener n° de aves
+  await Promise.all(Object.keys(PRODUCTORES).map(async slug=>{
+    if(lotesCache[slug]) return;
+    try{
+      const r=await fetch(`${SCRIPT_URL}?accion=lotes&slug=${encodeURIComponent(slug)}`);
+      const j=await r.json();
+      if(j.ok) lotesCache[slug]=j.lotes;
+    }catch{}
+  }));
+  const c=document.getElementById('dash-lista');
+  if(!entregasLocal.length){c.innerHTML='<div style="text-align:center;padding:30px;color:var(--gris);font-size:13px">Sin entregas registradas. Agrega la primera entrega.</div>';return;}
+  // Calcular stock por productor+lote
+  // Stock por PRODUCTOR (no por lote)
+  const stocks={};
+  entregasLocal.forEach(e=>{
+    const key=e.slug;
+    if(!stocks[key])stocks[key]={productor:e.productor,slug:e.slug,totalKg:0,ultimaFecha:e.fecha};
+    stocks[key].totalKg+=e.totalKg;
+    if(e.fecha>stocks[key].ultimaFecha)stocks[key].ultimaFecha=e.fecha;
+  });
+  const hoy=new Date().toISOString().split('T')[0];
+  c.innerHTML=Object.values(stocks).sort((a,b)=>a.productor.localeCompare(b.productor)).map(s=>{
+    // Consumo estimado: 115g/ave/día — necesitamos aves del lote
+    // Sumar aves de todos los lotes activos del productor
+    const lotesProductor=lotesCache[s.slug]||[];
+    const aves=lotesProductor.reduce((sum,l)=>sum+(l.aves||0),0);
+    const consumoDia=aves*0.115;
+    const diasDesde=Math.floor((new Date(hoy)-new Date(s.ultimaFecha))/(86400000));
+    const consumoAcum=consumoDia*diasDesde;
+    const stockActual=Math.max(0,s.totalKg-consumoAcum);
+    const diasRest=consumoDia>0?Math.round(stockActual/consumoDia):null;
+    let cls='dias-nd',txt='Sin aves config.';
+    if(diasRest!==null){
+      txt=`${diasRest} días`;
+      cls=diasRest<=5?'dias-crit':diasRest<=12?'dias-warn':'dias-ok';
+    }
+    return `<div class="dash-card">
+      <div class="dash-nombre">${s.productor}</div>
+      <div class="dash-row"><span class="dash-l">Total entregado</span><span class="dash-v">${s.totalKg.toLocaleString('es-CL')} kg</span></div>
+      <div class="dash-row"><span class="dash-l">Stock estimado</span><span class="dash-v">${Math.round(stockActual).toLocaleString('es-CL')} kg</span></div>
+      <div class="dash-row"><span class="dash-l">Días de stock</span><span class="dias-badge ${cls}">${txt}</span></div>
+      <div class="dash-row"><span class="dash-l">Última entrega</span><span class="dash-v">${s.ultimaFecha}</span></div>
+    </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
