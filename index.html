@@ -268,6 +268,31 @@ canvas{max-height:200px}
   </div>
 </div>
 
+
+<!-- MODAL EDITAR LOTE -->
+<div class="mov" id="modal-editar">
+  <div class="msh">
+    <div class="mtit">Editar lote</div>
+    <input type="hidden" id="ed-nombre-orig">
+    <div class="campo">
+      <label>N° de aves actuales <span class="req">*</span></label>
+      <input type="number" class="minp" id="ed-aves" placeholder="ej: 1000" inputmode="numeric" min="1">
+    </div>
+    <div class="campo">
+      <label>Fecha de nacimiento <span class="opt">opcional</span></label>
+      <input type="date" class="minp" id="ed-fecha">
+    </div>
+    <div style="font-size:11px;color:#9ca3af;margin-bottom:14px;line-height:1.5">
+      Actualiza el número de aves si hubo ingresos o bajas masivas.<br>
+      La fecha de nacimiento determina la semana de vida del lote.
+    </div>
+    <div class="macc">
+      <button type="button" class="bmc" onclick="cerrarModal('modal-editar')">Cancelar</button>
+      <button type="button" class="bmok" id="btn-ed-ok" onclick="confirmarEdicion()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ─── CONFIG ───────────────────────────────────────────────────
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxEbhLAa_fsOCdBy3tlHLMaGESt7n-UQ1RdnPWEy-AmMM5VDm9UZlVzYNkf7fUWWSJn9A/exec';
@@ -312,6 +337,7 @@ async function init(){
   renderKpis(); renderGraf('alimento');
   document.getElementById('form-reg').addEventListener('submit',enviar);
   document.getElementById('modal-lote').addEventListener('click',e=>{if(e.target===e.currentTarget)cerrarModal('modal-lote');});
+  document.getElementById('modal-editar').addEventListener('click',e=>{if(e.target===e.currentTarget)cerrarModal('modal-editar');});
 }
 
 // ─── TABS ─────────────────────────────────────────────────────
@@ -635,12 +661,58 @@ function renderCfgLotes(){
   if(!lotes.length){c.innerHTML='<div style="font-size:13px;color:#9ca3af">Sin lotes configurados.</div>';return;}
   c.innerHTML=lotes.map(l=>{
     const s=calcSem(l.fechaNac);
+    const semTxt=s!==null?`Semana ${s} de vida`:'<span style="color:#f59e0b">⚠️ Sin fecha de nacimiento</span>';
     return `<div style="background:var(--gc);border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid #e5e7eb">
-      <div style="font-size:14px;font-weight:600;color:var(--tx);margin-bottom:3px">${l.nombre}</div>
-      <div style="font-size:12px;color:var(--gris)">${l.aves.toLocaleString('es-CL')} aves · ${s!==null?'Semana '+s+' de vida':'Sin fecha de nacimiento'}</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <div style="font-size:14px;font-weight:600;color:var(--tx)">${l.nombre}</div>
+        <button type="button" onclick="abrirModalEditar('${escJs(l.nombre)}')"
+          style="padding:4px 12px;border-radius:8px;border:1.5px solid var(--vc);background:transparent;color:var(--vc);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
+          Editar
+        </button>
+      </div>
+      <div style="font-size:12px;color:var(--gris);margin-bottom:2px">${l.aves.toLocaleString('es-CL')} aves</div>
+      <div style="font-size:12px;color:var(--gris)">${semTxt}</div>
       <div style="font-size:11px;color:#9ca3af;margin-top:2px">Nacimiento: ${l.fechaNac||'no registrada'}</div>
     </div>`;
   }).join('');
+}
+
+// ─── EDITAR LOTE ─────────────────────────────────────────────
+function abrirModalEditar(nombre){
+  const l=lotes.find(x=>x.nombre===nombre);
+  if(!l) return;
+  document.getElementById('ed-nombre-orig').value=nombre;
+  document.getElementById('ed-aves').value=l.aves||'';
+  document.getElementById('ed-fecha').value=l.fechaNac||'';
+  document.getElementById('modal-editar').classList.add('on');
+  setTimeout(()=>document.getElementById('ed-aves').focus(),300);
+}
+
+async function confirmarEdicion(){
+  const nombreOrig=document.getElementById('ed-nombre-orig').value;
+  const avesNuevo=parseInt(document.getElementById('ed-aves').value)||0;
+  const fechaNueva=document.getElementById('ed-fecha').value;
+  if(!avesNuevo){alert('El número de aves es obligatorio.');return;}
+  const btn=document.getElementById('btn-ed-ok');
+  btn.textContent='Guardando...';btn.disabled=true;
+  try{
+    await post({
+      accion:'editar_lote',
+      slug, lote:nombreOrig,
+      aves:avesNuevo,
+      fechaNac:fechaNueva||'',
+    });
+  }catch(e){console.warn(e);}
+  // Actualizar caché local
+  const idx=lotes.findIndex(l=>l.nombre===nombreOrig);
+  if(idx>=0){lotes[idx].aves=avesNuevo;lotes[idx].fechaNac=fechaNueva||null;}
+  localStorage.setItem(cacheKey(),JSON.stringify(lotes));
+  // Refrescar UI
+  renderLotes();
+  renderCfgLotes();
+  btn.textContent='Guardar cambios';btn.disabled=false;
+  cerrarModal('modal-editar');
+  mostrarEstado(`Lote "${nombreOrig}" actualizado correctamente.`,true);
 }
 
 // ─── UTILS ───────────────────────────────────────────────────
